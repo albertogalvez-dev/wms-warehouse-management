@@ -1,0 +1,73 @@
+# ============================================
+# Caddyfile for WMS Production
+# Auto HTTPS with Let's Encrypt
+# ============================================
+
+# Replace YOUR_DOMAIN.com with your actual domain
+# For local testing, use :80 instead
+
+{$DOMAIN:localhost} {
+    # Serve frontend static files
+    root * /srv/frontend
+    
+    # Landing page at root
+    handle / {
+        rewrite * /landing/index.html
+        file_server
+    }
+    
+    # Landing assets
+    handle /landing/* {
+        file_server
+    }
+    
+    # Backoffice app
+    handle /backoffice/* {
+        file_server
+    }
+    
+    # Handheld app
+    handle /handheld/* {
+        file_server
+    }
+    
+    # Shared assets
+    handle /shared/* {
+        file_server
+    }
+    
+    # API reverse proxy
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    
+    # Auth endpoints
+    handle /auth/* {
+        reverse_proxy backend:8080
+    }
+    
+    # Swagger (disable in strict production)
+    handle /swagger-ui/* {
+        reverse_proxy backend:8080
+    }
+    
+    handle /v3/api-docs* {
+        reverse_proxy backend:8080
+    }
+    
+    # Actuator health
+    handle /actuator/* {
+        reverse_proxy backend:8080
+    }
+    
+    # Default file server
+    handle {
+        file_server
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}

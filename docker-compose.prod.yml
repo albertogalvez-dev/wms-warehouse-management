@@ -1,0 +1,101 @@
+# ============================================
+# WMS Production Docker Compose
+# For deployment to Oracle VPS (ARM64)
+# ============================================
+# Usage:
+#   cp .env.example .env
+#   docker compose -f docker-compose.prod.yml up -d
+# ============================================
+
+version: "3.9"
+
+services:
+  # ================================================
+  # PostgreSQL Database
+  # ================================================
+  db:
+    image: postgres:16-alpine
+    container_name: wms-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - wms-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - wms-network
+    # No external ports exposed in production
+
+    # ================================================
+    # Spring Boot Backend (API)
+    # ================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wms-backend
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      SERVER_PORT: 8080
+      PRINTER_ENABLED: ${PRINTER_ENABLED:-false}
+      PRINTER_HOST: ${PRINTER_HOST:-}
+      PRINTER_PORT: ${PRINTER_PORT:-9100}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - wms-network
+
+  # ================================================
+  # Caddy (Reverse Proxy + Auto HTTPS)
+  # ================================================
+  proxy:
+    image: caddy:2-alpine
+    container_name: wms-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend:/srv/frontend:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - wms-network
+
+volumes:
+  wms-postgres-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local
+
+networks:
+  wms-network:
+    driver: bridge

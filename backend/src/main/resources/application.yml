@@ -50,3 +50,9 @@ printer:
   port: ${PRINTER_PORT:9100}
   fail-strict: ${PRINTER_FAIL_STRICT:false}
   timeout: ${PRINTER_TIMEOUT:5000}
+
+# JWT Security
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-for-local-development-only-change-in-prod}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
