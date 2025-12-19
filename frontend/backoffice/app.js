@@ -17,17 +17,20 @@ if (!isAuthenticated()) {
   throw new Error('Not authenticated');
 }
 
-// Display user info
-const user = getUser();
-if (user) {
-  const userDisplay = document.getElementById('userDisplay');
-  if (userDisplay) {
-    userDisplay.textContent = `${user.username} (${user.role})`;
+// Setup after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Display user info
+  const user = getUser();
+  if (user) {
+    const userDisplay = document.getElementById('userDisplay');
+    if (userDisplay) {
+      userDisplay.textContent = `${user.username} (${user.role})`;
+    }
   }
-}
+});
 
-// Logout handler
-window.handleLogout = () => {
+// Logout handler - must be on window for onclick attribute
+window.handleLogout = function () {
   logout();
   window.location.href = './login.html';
 };
