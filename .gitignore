@@ -1,0 +1,59 @@
+# ============================================
+# WMS Project .gitignore
+# ============================================
+
+# === Java / Maven ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+*.swp
+*~
+
+# === Node / Frontend ===
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# === Environment / Secrets ===
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.jks
+
+# === OS Generated ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === Docker ===
+docker/data/
+
+# === Logs ===
+logs/
+*.log
+spring.log
+
+# === Build outputs ===
+build/
+dist/
+out/
+
+# === Misc ===
+*.bak
+*.backup
+.cache/

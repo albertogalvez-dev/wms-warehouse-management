@@ -1,0 +1,82 @@
+version: "3.9"
+
+services:
+  # ================================================
+  # PostgreSQL Database
+  # ================================================
+  db:
+    image: postgres:16-alpine
+    container_name: wms-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-wms}
+      POSTGRES_USER: ${DB_USER:-wms}
+      POSTGRES_PASSWORD: ${DB_PASS:-wms}
+    volumes:
+      - wms-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_EXTERNAL_PORT:-5433}:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-wms} -d ${DB_NAME:-wms}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - wms-network
+
+  # ================================================
+  # Spring Boot Backend (API)
+  # ================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wms-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-wms}
+      DB_USER: ${DB_USER:-wms}
+      DB_PASS: ${DB_PASS:-wms}
+      SERVER_PORT: 8080
+      PRINTER_ENABLED: ${PRINTER_ENABLED:-false}
+      PRINTER_HOST: ${PRINTER_HOST:-}
+      PRINTER_PORT: ${PRINTER_PORT:-9100}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - wms-network
+
+  # ================================================
+  # Nginx (Static Files + Reverse Proxy)
+  # ================================================
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: wms-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - wms-network
+
+volumes:
+  wms-postgres-data:
+    driver: local
+
+networks:
+  wms-network:
+    driver: bridge

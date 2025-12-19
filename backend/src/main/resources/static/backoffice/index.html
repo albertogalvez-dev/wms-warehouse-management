@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WMS Backoffice</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <div class="sidebar__logo">WMS</div>
+          <div class="sidebar__subtitle">Backoffice</div>
+        </div>
+
+        <nav class="nav">
+          <a class="nav__link" href="#/dashboard" data-route="/dashboard">Dashboard</a>
+          <a class="nav__link" href="#/orders" data-route="/orders">Orders</a>
+          <a class="nav__link" href="#/orders/new" data-route="/orders/new">Create Order</a>
+          <a class="nav__link" href="#/waves" data-route="/waves">Pick Waves</a>
+          <a class="nav__link" href="#/totes" data-route="/totes">Totes</a>
+          <a class="nav__link" href="#/shipments" data-route="/shipments">Shipments</a>
+          <div class="nav__spacer"></div>
+          <a class="nav__link" href="#/settings" data-route="/settings">Settings</a>
+        </nav>
+
+        <div class="sidebar__footer">
+          <div class="muted">API</div>
+          <div id="apiBaseUrlLabel" class="mono small"></div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="topbar__left">
+            <div id="pageTitle" class="topbar__title">Dashboard</div>
+            <div id="connectionBadge" class="badge badge--muted">Not checked</div>
+          </div>
+          <div class="topbar__right">
+            <a class="btn btn--ghost" href="#/settings">API Settings</a>
+          </div>
+        </header>
+
+        <main id="appMain" class="content" aria-live="polite"></main>
+      </div>
+    </div>
+
+    <div id="toastHost" class="toast-host" aria-live="assertive" aria-atomic="true"></div>
+
+    <div id="modalHost" class="modal-host" hidden>
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal__header">
+          <div id="modalTitle" class="modal__title">Modal</div>
+          <button class="btn btn--ghost btn--sm" data-close-modal>Close</button>
+        </div>
+        <div id="modalBody" class="modal__body"></div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" data-close-modal>Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
+

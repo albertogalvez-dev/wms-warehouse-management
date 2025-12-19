@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WMS Handheld Packing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        WMS Packing <span id="stationDisplay" style="font-size:0.8em; opacity:0.8"></span>
+    </header>
+
+    <main>
+        <!-- VIEW: LOGIN (Set Station) -->
+        <div id="viewLogin" class="card">
+            <h2 class="title">Station Setup</h2>
+            <div class="form-group">
+                <label>Select Station</label>
+                <select id="stationSelect" class="input" style="background:white">
+                    <option value="1">PACK-1</option>
+                    <option value="2">PACK-2</option>
+                    <option value="3">PACK-3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Operator Name</label>
+                <input type="text" id="operatorName" placeholder="Enter name" value="Operator">
+            </div>
+            <div class="form-group">
+                <label>API URL</label>
+                <input type="text" id="apiUrlInput" placeholder="http://localhost:8080">
+            </div>
+            <button id="btnInitStation" class="btn btn-primary">Start Work</button>
+        </div>
+
+        <!-- VIEW: START SESSION (Scan Tote) -->
+        <div id="viewStart" class="card hidden">
+            <h2 class="title">Start Packing</h2>
+            <p class="subtitle">Scan a tote barcode to begin</p>
+            <div class="form-group">
+                <input type="text" id="toteInput" placeholder="Scan Tote Barcode" autofocus autocomplete="off">
+            </div>
+            <div id="startError" class="error-msg"></div>
+            <button id="btnStartSession" class="btn btn-primary">Start Session</button>
+        </div>
+
+        <!-- VIEW: PACKING (Scan Items) -->
+        <div id="viewPacking" class="hidden">
+            <div class="card" style="background:#eff6ff; border:1px solid #bfdbfe">
+                <div class="row" style="display:flex; justify-content:space-between">
+                    <div>
+                        <div class="mono" style="font-weight:bold" id="packToteRef"></div>
+                        <div style="font-size:0.9em; color:#6b7280" id="packOrderRef"></div>
+                    </div>
+                    <div style="text-align:right">
+                         <div style="font-weight:bold; color:var(--primary-color)" id="packProgress">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="form-group">
+                    <label>Scan Product</label>
+                    <input type="text" id="productInput" placeholder="Scan Barcode/SKU" autocomplete="off">
+                </div>
+                <div id="scanMsg"></div>
+            </div>
+
+            <div class="card" style="padding:0">
+                <div id="packingList">
+                    <!-- Javascript will populate this -->
+                </div>
+            </div>
+
+            <button id="btnFinishScan" class="btn btn-primary hidden">Next: Create Packages</button>
+        </div>
+
+        <!-- VIEW: SET PACKAGES -->
+        <div id="viewPackages" class="card hidden">
+            <h2 class="title">Create Packages</h2>
+            <p class="subtitle">How many boxes for this order?</p>
+            
+            <div style="display:flex; gap:1rem; align-items:center; justify-content:center; margin: 2rem 0;">
+                <button class="btn btn-secondary" style="width:60px; margin:0" onclick="adjustPackages(-1)">-</button>
+                <span id="packageCountDisplay" style="font-size:2.5rem; font-weight:bold; width:60px; text-align:center">1</span>
+                <button class="btn btn-secondary" style="width:60px; margin:0" onclick="adjustPackages(1)">+</button>
+            </div>
+
+            <button id="btnConfirmPackages" class="btn btn-primary">Generate Labels</button>
+            <button class="btn btn-secondary" onclick="showView('packing')">Back</button>
+        </div>
+
+        <!-- VIEW: COMPLETE (Summary) -->
+        <div id="viewComplete" class="card hidden">
+            <h2 class="title" style="color:var(--success-color)">Packing Complete!</h2>
+            <p class="subtitle">Order <span id="doneOrderRef" class="mono"></span> packed.</p>
+            
+            <div id="labelsList" style="margin-bottom:1.5rem"></div>
+
+            <button id="btnNextTote" class="btn btn-primary">Pack Next Tote</button>
+        </div>
+    </main>
+
+    <div id="toast">Message</div>
+
+    <script type="module" src="app.js"></script>
+    <script>
+        // Simple inline helper for package count buttons
+        window.adjustPackages = function(delta) {
+             const display = document.getElementById('packageCountDisplay');
+             let val = parseInt(display.textContent);
+             val += delta;
+             if (val < 1) val = 1;
+             if (val > 20) val = 20;
+             display.textContent = val;
+        }
+    </script>
+</body>
+</html>

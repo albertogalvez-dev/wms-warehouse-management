@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WMS Handheld - Packing</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- ========== HEADER ========== -->
+    <header class="hh-header">
+        <div class="hh-header-content">
+            <div class="hh-logo">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="6" fill="#fff" />
+                    <path d="M8 22V10l4 6 4-6v12" stroke="#004090" stroke-width="2" />
+                    <path d="M20 10h5v3h-5v3h4v3h-4v3" stroke="#004090" stroke-width="2" />
+                </svg>
+                <span>WMS Packing</span>
+            </div>
+            <div id="stationDisplay" class="hh-station"></div>
+        </div>
+        <div class="hh-header-line"></div>
+    </header>
+
+    <main class="hh-main">
+        <!-- ========== VIEW: SETUP ========== -->
+        <div id="viewLogin" class="hh-view">
+            <div class="hh-card">
+                <div class="hh-card-header">
+                    <h2 class="hh-card-title">Station Setup</h2>
+                    <p class="hh-card-subtitle">Configure your packing station</p>
+                </div>
+                <div class="hh-card-body">
+                    <div class="hh-form-group">
+                        <label class="hh-label">Select Station</label>
+                        <select id="stationSelect" class="hh-select">
+                            <option value="1">PACK-1</option>
+                            <option value="2">PACK-2</option>
+                            <option value="3">PACK-3</option>
+                        </select>
+                    </div>
+                    <div class="hh-form-group">
+                        <label class="hh-label">Operator Name</label>
+                        <input type="text" id="operatorName" class="hh-input" placeholder="Enter your name"
+                            value="Operator">
+                    </div>
+                    <div class="hh-form-group">
+                        <label class="hh-label">API URL</label>
+                        <input type="text" id="apiUrlInput" class="hh-input hh-input-mono"
+                            placeholder="http://localhost:8080">
+                    </div>
+                    <button id="btnInitStation" class="hh-btn hh-btn-primary hh-btn-block">
+                        Start Work
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== VIEW: START SESSION ========== -->
+        <div id="viewStart" class="hh-view hidden">
+            <div class="hh-instruction">
+                <div class="hh-instruction-icon">📦</div>
+                <div class="hh-instruction-text">SCAN TOTE</div>
+                <div class="hh-instruction-hint">Scan tote barcode to begin packing</div>
+            </div>
+
+            <div class="hh-scan-area">
+                <input type="text" id="toteInput" class="hh-scan-input" placeholder="Scan Tote Barcode..."
+                    autocomplete="off" autofocus>
+                <div id="startError" class="hh-error-msg hidden"></div>
+                <button id="btnStartSession" class="hh-btn hh-btn-primary hh-btn-block">
+                    Start Session
+                </button>
+            </div>
+        </div>
+
+        <!-- ========== VIEW: PACKING ========== -->
+        <div id="viewPacking" class="hh-view hidden">
+            <div class="hh-order-banner">
+                <div class="hh-order-info">
+                    <div id="packToteRef" class="hh-order-tote">TOTE-XXX</div>
+                    <div id="packOrderRef" class="hh-order-ref">Order #XXX</div>
+                </div>
+                <div id="packProgress" class="hh-progress-badge">0%</div>
+            </div>
+
+            <div class="hh-instruction hh-instruction-sm">
+                <div class="hh-instruction-text">SCAN PRODUCT</div>
+            </div>
+
+            <div class="hh-scan-area">
+                <input type="text" id="productInput" class="hh-scan-input" placeholder="Scan Product Barcode/SKU..."
+                    autocomplete="off">
+                <div id="scanMsg" class="hh-scan-msg"></div>
+            </div>
+
+            <div class="hh-card hh-packing-list">
+                <div class="hh-card-header">
+                    <span class="hh-card-title">Items to Pack</span>
+                </div>
+                <div id="packingList" class="hh-items-list">
+                    <!-- Items populated by JS -->
+                </div>
+            </div>
+
+            <button id="btnFinishScan" class="hh-btn hh-btn-accent hh-btn-block hidden">
+                ✓ All Items Scanned — Next Step
+            </button>
+        </div>
+
+        <!-- ========== VIEW: SET PACKAGES ========== -->
+        <div id="viewPackages" class="hh-view hidden">
+            <div class="hh-card">
+                <div class="hh-card-header">
+                    <h2 class="hh-card-title">Create Packages</h2>
+                    <p class="hh-card-subtitle">How many boxes for this order?</p>
+                </div>
+                <div class="hh-card-body text-center">
+                    <div class="hh-package-counter">
+                        <button class="hh-counter-btn" onclick="adjustPackages(-1)">−</button>
+                        <span id="packageCountDisplay" class="hh-counter-value">1</span>
+                        <button class="hh-counter-btn" onclick="adjustPackages(1)">+</button>
+                    </div>
+
+                    <button id="btnConfirmPackages" class="hh-btn hh-btn-primary hh-btn-block">
+                        Generate Labels
+                    </button>
+                    <button class="hh-btn hh-btn-ghost hh-btn-block" onclick="showView('packing')">
+                        ← Back to Scanning
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== VIEW: COMPLETE ========== -->
+        <div id="viewComplete" class="hh-view hidden">
+            <div class="hh-success-banner">
+                <div class="hh-success-icon">✓</div>
+                <div class="hh-success-text">Packing Complete!</div>
+                <div id="doneOrderRef" class="hh-success-ref">Order #XXX</div>
+            </div>
+
+            <div class="hh-card">
+                <div class="hh-card-header">
+                    <span class="hh-card-title">Generated Labels</span>
+                </div>
+                <div id="labelsList" class="hh-card-body">
+                    <!-- Labels populated by JS -->
+                </div>
+            </div>
+
+            <button id="btnNextTote" class="hh-btn hh-btn-primary hh-btn-block">
+                Pack Next Tote →
+            </button>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="hh-toast"></div>
+
+    <script type="module" src="app.js"></script>
+    <script>
+        window.adjustPackages = function (delta) {
+            const display = document.getElementById('packageCountDisplay');
+            let val = parseInt(display.textContent);
+            val += delta;
+            if (val < 1) val = 1;
+            if (val > 20) val = 20;
+            display.textContent = val;
+        }
+        window.showView = function (name) {
+            document.querySelectorAll('.hh-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1))?.classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>

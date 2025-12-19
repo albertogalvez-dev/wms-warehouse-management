@@ -1,0 +1,473 @@
+/* ============================================
+   WMS Handheld Styles - Industrial Kiosk
+   ============================================ */
+
+/* ========== BASE ========== */
+body {
+    background: var(--bg-soft);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== HEADER ========== */
+.hh-header {
+    background: var(--brand-blue);
+    color: var(--text-inverse);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.hh-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px var(--space-lg);
+}
+
+.hh-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.hh-station {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.hh-header-line {
+    height: 4px;
+    background: var(--accent-orange);
+}
+
+/* ========== MAIN ========== */
+.hh-main {
+    flex: 1;
+    padding: var(--space-lg);
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ========== VIEWS ========== */
+.hh-view {
+    animation: fadeIn 0.2s ease;
+}
+
+.hh-view.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== CARDS ========== */
+.hh-card {
+    background: var(--bg);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+}
+
+.hh-card-header {
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.hh-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--brand-blue);
+    margin: 0;
+}
+
+.hh-card-subtitle {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin: 4px 0 0;
+}
+
+.hh-card-body {
+    padding: var(--space-lg);
+}
+
+/* ========== FORMS ========== */
+.hh-form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.hh-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.hh-input,
+.hh-select {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1.125rem;
+    font-family: inherit;
+    border: 2px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.15s;
+}
+
+.hh-input:focus,
+.hh-select:focus {
+    outline: none;
+    border-color: var(--brand-blue);
+}
+
+.hh-input-mono {
+    font-family: var(--font-mono);
+}
+
+.hh-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%2364748B' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 44px;
+}
+
+/* ========== BUTTONS ========== */
+.hh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 24px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+    text-decoration: none;
+}
+
+.hh-btn:active {
+    transform: scale(0.98);
+}
+
+.hh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.hh-btn-primary {
+    background: var(--brand-blue);
+    color: var(--text-inverse);
+}
+
+.hh-btn-accent {
+    background: var(--accent-orange);
+    color: var(--text-inverse);
+}
+
+.hh-btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+}
+
+.hh-btn-block {
+    width: 100%;
+}
+
+/* ========== INSTRUCTION BANNER ========== */
+.hh-instruction {
+    text-align: center;
+    padding: var(--space-xl) var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.hh-instruction-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-sm);
+}
+
+.hh-instruction-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hh-instruction-hint {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: 8px;
+}
+
+.hh-instruction-sm {
+    padding: var(--space-md);
+}
+
+.hh-instruction-sm .hh-instruction-text {
+    font-size: 1rem;
+}
+
+/* ========== SCAN AREA ========== */
+.hh-scan-area {
+    margin-bottom: var(--space-lg);
+}
+
+.hh-scan-input {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.5rem;
+    font-family: var(--font-mono);
+    text-align: center;
+    border: 3px solid var(--brand-blue);
+    border-radius: var(--r-lg);
+    background: var(--bg);
+    color: var(--text);
+    margin-bottom: var(--space-md);
+}
+
+.hh-scan-input:focus {
+    outline: none;
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 0 4px var(--accent-orange-light);
+}
+
+.hh-scan-msg {
+    min-height: 24px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.hh-error-msg {
+    background: var(--err-bg);
+    color: var(--err);
+    padding: 12px;
+    border-radius: var(--r-md);
+    text-align: center;
+    margin-bottom: var(--space-md);
+}
+
+.hh-error-msg.hidden {
+    display: none;
+}
+
+/* ========== ORDER BANNER ========== */
+.hh-order-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--brand-blue-light);
+    border: 1px solid var(--brand-blue);
+    border-radius: var(--r-lg);
+    padding: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.hh-order-tote {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--brand-blue);
+    font-size: 1.125rem;
+}
+
+.hh-order-ref {
+    font-size: 0.875rem;
+    color: var(--text-2);
+}
+
+.hh-progress-badge {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--brand-blue);
+}
+
+/* ========== PACKING LIST ========== */
+.hh-packing-list {
+    margin-bottom: var(--space-lg);
+}
+
+.hh-items-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.hh-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border);
+}
+
+.hh-item:last-child {
+    border-bottom: none;
+}
+
+.hh-item.complete {
+    background: var(--ok-bg);
+}
+
+.hh-item-info {
+    flex: 1;
+}
+
+.hh-item-sku {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.hh-item-name {
+    font-size: 0.875rem;
+    color: var(--muted);
+}
+
+.hh-item-qty {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.25rem;
+    padding: 6px 14px;
+    background: var(--bg-soft);
+    border-radius: var(--r-md);
+}
+
+.hh-item.complete .hh-item-qty {
+    background: var(--ok);
+    color: var(--text-inverse);
+}
+
+/* ========== PACKAGE COUNTER ========== */
+.hh-package-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    margin: var(--space-xl) 0;
+}
+
+.hh-counter-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--bg-soft);
+    border: 2px solid var(--border);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.hh-counter-btn:active {
+    background: var(--border);
+}
+
+.hh-counter-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--brand-blue);
+    min-width: 80px;
+    text-align: center;
+}
+
+/* ========== SUCCESS BANNER ========== */
+.hh-success-banner {
+    text-align: center;
+    padding: var(--space-2xl);
+    background: var(--ok-bg);
+    border-radius: var(--r-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.hh-success-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--ok);
+    color: var(--text-inverse);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto var(--space-md);
+}
+
+.hh-success-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ok);
+}
+
+.hh-success-ref {
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    margin-top: 8px;
+}
+
+/* ========== TOAST ========== */
+.hh-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--text-inverse);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.hh-toast.show {
+    opacity: 1;
+}
+
+.hh-toast.error {
+    background: var(--err);
+}
+
+.hh-toast.success {
+    background: var(--ok);
+}
+
+/* ========== UTILITIES ========== */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-ok {
+    color: var(--ok);
+}
+
+.text-err {
+    color: var(--err);
+}
