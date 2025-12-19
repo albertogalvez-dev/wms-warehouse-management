@@ -2,6 +2,7 @@ import { apiGet } from "./api.js";
 import { getApiBaseUrl } from "./config.js";
 import { createRouter } from "./router.js";
 import { createUi } from "./ui.js";
+import { isAuthenticated, getUser, logout } from "../shared/auth.js";
 
 import { renderDashboard } from "./pages/dashboard.js";
 import { renderOrdersList, renderOrderCreate, renderOrderDetail } from "./pages/orders.js";
@@ -9,6 +10,27 @@ import { renderWavesList, renderWaveDetail } from "./pages/waves.js";
 import { renderTotes } from "./pages/totes.js";
 import { renderShipments } from "./pages/shipments.js";
 import { renderSettings } from "./pages/settings.js";
+
+// Auth check - redirect to login if not authenticated
+if (!isAuthenticated()) {
+  window.location.href = './login.html';
+  throw new Error('Not authenticated');
+}
+
+// Display user info
+const user = getUser();
+if (user) {
+  const userDisplay = document.getElementById('userDisplay');
+  if (userDisplay) {
+    userDisplay.textContent = `${user.username} (${user.role})`;
+  }
+}
+
+// Logout handler
+window.handleLogout = () => {
+  logout();
+  window.location.href = './login.html';
+};
 
 const appMain = document.getElementById("appMain");
 

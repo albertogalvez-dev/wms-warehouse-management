@@ -1,10 +1,11 @@
 # ============================================
 # WMS Production Docker Compose
-# For deployment to Oracle VPS (ARM64)
+# For deployment to Oracle VPS (ARM64/aarch64)
 # ============================================
 # Usage:
 #   cp .env.example .env
-#   docker compose -f docker-compose.prod.yml up -d
+#   # Edit .env with production values
+#   docker compose -f docker-compose.prod.yml up -d --build
 # ============================================
 
 version: "3.9"
@@ -18,20 +19,20 @@ services:
     container_name: wms-db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME:-wms}
+      POSTGRES_USER: ${DB_USER:-wms_user}
+      POSTGRES_PASSWORD: ${DB_PASS:?DB_PASS is required}
     volumes:
       - wms-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-wms_user} -d ${DB_NAME:-wms}" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
       - wms-network
-    # No external ports exposed in production
+    # No external ports exposed in production for security
 
     # ================================================
     # Spring Boot Backend (API)
@@ -43,15 +44,24 @@ services:
     container_name: wms-backend
     restart: always
     environment:
+      # Spring profile
       SPRING_PROFILES_ACTIVE: prod
+      # Database connection (Spring Boot standard names)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-wms}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-wms_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASS:?DB_PASS is required}
+      # Legacy env vars for backward compatibility
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
-      JWT_SECRET: ${JWT_SECRET}
+      DB_NAME: ${DB_NAME:-wms}
+      DB_USER: ${DB_USER:-wms_user}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
+      # JWT Security
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      # Server
       SERVER_PORT: 8080
+      # Printer (optional)
       PRINTER_ENABLED: ${PRINTER_ENABLED:-false}
       PRINTER_HOST: ${PRINTER_HOST:-}
       PRINTER_PORT: ${PRINTER_PORT:-9100}
@@ -63,7 +73,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     networks:
       - wms-network
 
@@ -82,6 +92,8 @@ services:
       - ./frontend:/srv/frontend:ro
       - caddy-data:/data
       - caddy-config:/config
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
     depends_on:
       backend:
         condition: service_healthy

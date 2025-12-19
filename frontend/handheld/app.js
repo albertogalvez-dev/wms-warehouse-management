@@ -1,5 +1,22 @@
 import { api } from "./api.js";
 import { saveApiBaseUrl, getApiBaseUrl } from "./config.js";
+import { isAuthenticated, getUser, logout } from "../shared/auth.js";
+
+// Auth check - redirect to login if not authenticated
+if (!isAuthenticated()) {
+    window.location.href = './login.html';
+    throw new Error('Not authenticated');
+}
+
+// Display user info in header
+const user = getUser();
+window.currentUser = user;
+
+// Logout handler
+window.handleLogout = () => {
+    logout();
+    window.location.href = './login.html';
+};
 
 // STATE
 let state = {

@@ -1,7 +1,8 @@
 # ============================================
 # STAGE 1: Build with Maven
+# ARM64 compatible (Oracle VPS / aarch64)
 # ============================================
-FROM maven:3.9-eclipse-temurin-17-alpine AS builder
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
@@ -19,13 +20,17 @@ RUN mvn clean package -DskipTests -B
 
 # ============================================
 # STAGE 2: Runtime with JRE only
+# Using jammy (Ubuntu) base for ARM64 support
 # ============================================
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup -g 1001 wms && adduser -u 1001 -G wms -D wms
+# Create non-root user for security (Ubuntu/jammy syntax)
+RUN groupadd -g 1001 wms && useradd -m -u 1001 -g wms -s /bin/bash wms
+
+# Install wget for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
 
 # Copy the built JAR from builder stage
 COPY --from=builder /app/target/*.jar app.jar
@@ -42,8 +47,9 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
-# Environment variable defaults
+# Environment variable defaults (overridden by compose)
 ENV SERVER_PORT=8080 \
+    SPRING_PROFILES_ACTIVE=dev \
     DB_HOST=db \
     DB_PORT=5432 \
     DB_NAME=wms \

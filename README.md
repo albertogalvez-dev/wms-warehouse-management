@@ -209,27 +209,99 @@ mvn test
 mvn test jacoco:report
 ```
 
-## 🚀 Deployment (Oracle VPS)
+## 🚀 Deploy to Oracle VPS (ARM64/aarch64)
+
+This project is optimized for Oracle Cloud Free Tier with ARM A1.Flex instances.
+
+### Prerequisites on VPS
 
 ```bash
-# 1. SSH to your VPS
-ssh opc@your-vps-ip
+# SSH to your VPS
+ssh opc@YOUR_VPS_IP
 
-# 2. Install Docker
-sudo dnf install -y docker docker-compose
+# Install Docker (Oracle Linux 9)
+sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo systemctl enable --now docker
+sudo usermod -aG docker opc
+# Log out and log back in for group changes
+```
 
-# 3. Clone and deploy
+### Deployment Steps
+
+```bash
+# 1. Clone repository
 git clone https://github.com/albertogalvez/wms-warehouse-management.git
 cd wms-warehouse-management
+
+# 2. Create and configure .env
 cp .env.example .env
-
-# 4. Edit .env with production values
-nano .env  # Set SPRING_PROFILES_ACTIVE=prod, strong JWT_SECRET
-
-# 5. Start
-docker compose up -d
+nano .env
 ```
+
+### Required .env Configuration for Production
+
+```bash
+# === REQUIRED: Change these values ===
+DB_PASS=your_secure_database_password_here
+JWT_SECRET=your_32_char_secure_random_string_here
+
+# === IMPORTANT: Set your domain or IP ===
+# With domain (auto HTTPS):
+DOMAIN=wms.yourdomain.com
+
+# Without domain (HTTP only, use IP):
+DOMAIN=:80
+
+# === Production profile ===
+SPRING_PROFILES_ACTIVE=prod
+
+# === Optional: CORS for external access ===
+CORS_ALLOWED_ORIGINS=*
+```
+
+### Start Production Services
+
+```bash
+# Build and start with production compose file
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Check logs
+docker compose -f docker-compose.prod.yml logs -f backend
+
+# Verify health
+curl http://localhost/actuator/health
+curl http://localhost/api/ping
+```
+
+### Firewall (Oracle Cloud)
+
+Open these ports in your VCN Security List:
+- **80** (HTTP)
+- **443** (HTTPS, if using domain)
+
+```bash
+# Also in iptables (Oracle Linux)
+sudo firewall-cmd --permanent --add-port=80/tcp
+sudo firewall-cmd --permanent --add-port=443/tcp
+sudo firewall-cmd --reload
+```
+
+### Update Deployment
+
+```bash
+cd wms-warehouse-management
+git pull origin master
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Files Modified for ARM Compatibility
+
+| File | Change |
+|------|--------|
+| `backend/Dockerfile` | Uses `eclipse-temurin:17-jre-jammy` (Ubuntu) instead of Alpine |
+| `docker-compose.prod.yml` | Includes `SPRING_DATASOURCE_*` environment variables |
+| `.env.example` | Full documentation of all required variables |
 
 ## 📝 License
 
