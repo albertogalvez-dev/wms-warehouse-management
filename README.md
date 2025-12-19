@@ -1,423 +1,240 @@
 # WMS - Warehouse Management System
 
-Sistema de gestión de almacenes con backend Spring Boot y base de datos PostgreSQL.
+A complete Warehouse Management System built with **Java 17 + Spring Boot 3 + PostgreSQL**.  
+Designed as a production-ready portfolio project demonstrating real warehouse operations.
 
-## 📋 Requisitos
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        WMS ARCHITECTURE                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
+│   │ FRONTEND │    │  NGINX   │    │ BACKEND  │    │POSTGRESQL│     │
+│   │ Backoffice│───▶│  Proxy   │───▶│Spring Boot│───▶│   DB     │     │
+│   │ Handheld │    │  :80     │    │  :8080   │    │  :5432   │     │
+│   └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-- **Java 17** o superior
-- **Maven 3.8+** (o usar `C:\tools\apache-maven-3.9.6` si fue instalado automáticamente)
-- **Docker** y **Docker Compose**
+## 📦 Order Flow
 
-> ⚠️ **Nota**: Si tienes PostgreSQL local instalado en el puerto 5432, este proyecto usa el puerto **5433** para evitar conflictos.
+```
+  ┌─────────┐     ┌──────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+  │  DRAFT  │────▶│ RELEASED │────▶│ PICKING │────▶│ PACKING │────▶│ SHIPPED │
+  └─────────┘     └──────────┘     └─────────┘     └─────────┘     └─────────┘
+       │               │                │               │               │
+       ▼               ▼                ▼               ▼               ▼
+   Create order   Allocate stock   Wave picking    Scan & pack    Print labels
+   Add lines      → RELEASED       Zebra device    Validate qty   Ship to carrier
+```
 
-## 🔧 Variables de Entorno
+## ⚡ Quick Start
 
-El backend soporta configuración mediante variables de entorno para facilitar el deploy:
+### Prerequisites
+- **Java 17** or higher
+- **Maven 3.8+**
+- **Docker** and **Docker Compose**
 
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `SERVER_PORT` | Puerto del servidor | `8080` |
-| `DB_HOST` | Host de PostgreSQL | `127.0.0.1` |
-| `DB_PORT` | Puerto de PostgreSQL | `5433` |
-| `DB_NAME` | Nombre de la base de datos | `wms` |
-| `DB_USER` | Usuario de PostgreSQL | `wms` |
-| `DB_PASS` | Contraseña de PostgreSQL | `wms` |
-| `SHOW_SQL` | Mostrar SQL en logs | `false` |
-| `PRINTER_ENABLED` | Habilitar impresiÇün Zebra (TCP) | `false` |
-| `PRINTER_HOST` | IP/host de la impresora | *(vacÇðo)* |
-| `PRINTER_PORT` | Puerto de impresiÇün | `9100` |
-| `PRINTER_FAIL_STRICT` | Si falla impresiÇün: abortar (500) | `false` |
-| `PRINTER_TIMEOUT` | Timeout socket impresora (ms) | `5000` |
-
-## 🚀 Inicio Rápido
-
-### 1. Iniciar la base de datos PostgreSQL
+### Local Development (Docker Compose)
 
 ```bash
-cd docker
+# 1. Clone the repository
+git clone https://github.com/albertogalvez/wms-warehouse-management.git
+cd wms-warehouse-management
+
+# 2. Copy environment file
+cp .env.example .env
+
+# 3. Start all services
 docker compose up -d
+
+# 4. Wait for startup (~60s), then open:
 ```
 
-Esto levantará un contenedor PostgreSQL 16 con:
-- **Host:** localhost
-- **Puerto:** 5433 (⚠️ importante: no 5432)
-- **Base de datos:** wms
-- **Usuario:** wms
-- **Contraseña:** wms
+| Service | URL |
+|---------|-----|
+| 🏠 Backoffice | http://localhost/ |
+| 📱 Handheld | http://localhost/handheld/ |
+| 📖 Swagger API | http://localhost/swagger-ui/index.html |
+| 💚 Health Check | http://localhost/actuator/health |
 
-### 2. Iniciar el backend
+### Manual Backend (without Docker)
 
 ```bash
-cd backend
-# Con Maven global
-mvn spring-boot:run
+# Start PostgreSQL
+cd docker && docker compose up -d
 
-# O con Maven portable (Windows)
-C:\tools\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+# Run backend
+cd backend
+mvn spring-boot:run
 ```
 
-El servidor arrancará en `http://localhost:8080`
+## 🔐 Authentication
 
-## 🔗 Endpoints Disponibles
+JWT-based authentication with role-based access control.
 
-### Sistema
-| Endpoint | Descripción |
-|----------|-------------|
-| `GET /api/ping` | Health check - devuelve `{"status": "ok"}` |
-| `GET /actuator/health` | Estado del aplicativo (Actuator) |
-| `GET /swagger-ui/index.html` | Documentación API (Swagger UI) |
+### Default Admin
+- **Username:** `admin`
+- **Password:** `admin123`
+
+### Login Example
+```bash
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "username": "admin",
+  "role": "ADMIN",
+  "expiresIn": 86400000
+}
+```
+
+### Roles
+
+| Role | Permissions |
+|------|-------------|
+| `ADMIN` | Full access to all operations |
+| `MANAGER` | Manage products, locations, orders, waves |
+| `PICKER` | Picking operations only |
+| `PACKER` | Packing operations only |
+
+## 🔧 Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SPRING_PROFILES_ACTIVE` | Active profile (dev/prod) | `dev` |
+| `DB_HOST` | PostgreSQL host | `127.0.0.1` |
+| `DB_PORT` | PostgreSQL port | `5433` |
+| `DB_NAME` | Database name | `wms` |
+| `DB_USER` | Database user | `wms` |
+| `DB_PASS` | Database password | `wms` |
+| `JWT_SECRET` | JWT signing key (256-bit) | dev default |
+| `JWT_EXPIRATION_MS` | Token expiration (ms) | `86400000` |
+| `PRINTER_ENABLED` | Enable Zebra printing | `false` |
+| `PRINTER_HOST` | Zebra printer IP | - |
+
+## 📡 API Endpoints
+
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/login` | Login, returns JWT |
+| POST | `/auth/register` | Register user (Admin) |
+| GET | `/auth/me` | Current user info |
 
 ### Products
-| Método | Endpoint | Descripción |
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/products` | Crear producto |
-| `GET` | `/api/products/{id}` | Obtener por ID |
-| `GET` | `/api/products?query=&page=&size=` | Buscar paginado |
-| `PUT` | `/api/products/{id}` | Actualizar |
-| `DELETE` | `/api/products/{id}` | Soft delete |
+| GET | `/api/products` | List products (paginated) |
+| GET | `/api/products/{id}` | Get product by ID |
+| POST | `/api/products` | Create product |
+| PUT | `/api/products/{id}` | Update product |
 
-### Locations
-| Método | Endpoint | Descripción |
+### Orders
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/locations` | Crear ubicación |
-| `GET` | `/api/locations/{id}` | Obtener por ID |
-| `GET` | `/api/locations?query=&page=&size=` | Buscar paginado |
-| `PUT` | `/api/locations/{id}` | Actualizar |
-| `DELETE` | `/api/locations/{id}` | Soft delete |
+| GET | `/api/orders` | List orders |
+| POST | `/api/orders` | Create order |
+| POST | `/api/orders/{id}/release` | Release to picking |
+| GET | `/api/orders/{id}` | Get order details |
 
-### Stock
-| Método | Endpoint | Descripción |
+### Waves
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/stock/adjust` | Ajustar stock (+/-) |
-| `GET` | `/api/stock?productId=&locationId=&page=&size=` | Listar con filtros |
+| GET | `/api/waves` | List waves |
+| POST | `/api/waves` | Create wave |
+| GET | `/api/waves/{id}/picklist` | Get pick list |
 
-### Orders (M3)
-| Método | Endpoint | Descripción |
+### Picking (Handheld)
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/orders` | Crear pedido con líneas + shipping + carrier |
-| `GET` | `/api/orders/{id}` | Obtener pedido con líneas |
-| `GET` | `/api/orders?status=&page=&size=` | Buscar paginado por status |
-| `POST` | `/api/orders/{id}/release` | Liberar pedido a picking (asigna stock) |
-| `PUT` | `/api/orders/{id}/shipping` | Actualizar dirección y carrier (solo DRAFT/RELEASED) |
+| GET | `/api/picking/tasks/{waveId}` | Get pick tasks |
+| POST | `/api/picking/complete` | Complete pick |
 
-### Pick Tasks (M3)
-| Método | Endpoint | Descripción |
+### Packing
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/pick-tasks/{id}` | Obtener tarea con líneas de picking |
-| `GET` | `/api/pick-tasks?status=&page=&size=` | Buscar paginado por status |
-| `GET` | `/api/pick-tasks/{id}/handheld` | Resumen para terminal móvil |
+| POST | `/api/packing/start` | Start packing session |
+| POST | `/api/packing/scan` | Scan product |
+| POST | `/api/packing/set-packages` | Set package count |
+| POST | `/api/packing/complete` | Complete packing |
 
-### Meta (M3.1)
-| Método | Endpoint | Descripción |
+### Shipments
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/meta/carriers` | Lista de transportistas disponibles |
+| GET | `/api/shipments/{id}` | Get shipment |
+| GET | `/api/shipments/{id}/labels` | Get ZPL labels |
 
-### Pick Waves (M3.2)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/pick-waves` | Crear wave con múltiples pedidos |
-| `GET` | `/api/pick-waves/{id}` | Obtener wave con pedidos y totes |
-| `GET` | `/api/pick-waves?status=&page=&size=` | Buscar paginado |
-| `POST` | `/api/pick-waves/{id}/start` | Iniciar wave (PLANNED→IN_PROGRESS) |
-| `POST` | `/api/pick-waves/{id}/complete` | Completar wave (si todos PICKED) |
-| `GET` | `/api/pick-waves/{id}/pick-list` | Lista de picking agrupada por ubicación |
-
-### Picking Sessions (M4.0)
-| MÇ¸todo | Endpoint | DescripciÇün |
-|--------|----------|-------------|
-| `POST` | `/api/picking/sessions/start` | Iniciar sesiÇün de picking para una wave |
-| `POST` | `/api/picking/sessions/{sessionId}/scan` | Escanear (location/product/tote) y aplicar picking |
-| `GET` | `/api/picking/sessions/{sessionId}` | Consultar sesiÇün (reanudar handheld) |
-| `POST` | `/api/picking/sessions/{sessionId}/complete` | Completar sesiÇün (solo si no quedan picklines OPEN) |
-
-### Totes (M3.2)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/totes/{barcode}` | Obtener tote por barcode |
-| `POST` | `/api/totes/{barcode}/assign-station` | Asignar tote a estación de packing |
-| `POST` | `/api/totes/{barcode}/close` | Cerrar tote (solo si pedido PICKED) |
-
-### Packing Stations (M3.2)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/packing-stations` | Listar estaciones activas |
-| `POST` | `/api/packing-stations` | Crear estación |
-| `PUT` | `/api/packing-stations/{id}` | Actualizar estación |
-
-## 📝 Ejemplos con cURL
-
-### Crear un producto
-```bash
-curl -X POST http://localhost:8080/api/products \
-  -H "Content-Type: application/json" \
-  -d '{"sku":"NUEVO-001","name":"Producto Nuevo","barcode":"1234567890123"}'
-```
-
-### Listar productos
-```bash
-curl "http://localhost:8080/api/products?query=widget&page=0&size=10"
-```
-
-### Crear una ubicación
-```bash
-curl -X POST http://localhost:8080/api/locations \
-  -H "Content-Type: application/json" \
-  -d '{"code":"D-01-01","zone":"D","description":"Nueva ubicación"}'
-```
-
-### Ajustar stock (añadir 50 unidades)
-```bash
-curl -X POST http://localhost:8080/api/stock/adjust \
-  -H "Content-Type: application/json" \
-  -d '{"productId":1,"locationId":1,"delta":50,"reason":"Recepción de mercancía"}'
-```
-
-### Ajustar stock (restar 10 unidades)
-```bash
-curl -X POST http://localhost:8080/api/stock/adjust \
-  -H "Content-Type: application/json" \
-  -d '{"productId":1,"locationId":1,"delta":-10,"reason":"Venta"}'
-```
-
-### Ver stock
-```bash
-curl "http://localhost:8080/api/stock?page=0&size=20"
-```
-
-### Crear un pedido con shipping (M3.1)
-```bash
-curl -X POST http://localhost:8080/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "externalRef":"ERP-NEW-001",
-    "carrier":"DHL",
-    "shipping":{
-      "name":"Cliente Ejemplo",
-      "phone":"+34600000000",
-      "email":"cliente@example.com",
-      "address1":"Calle Principal 123",
-      "address2":"Piso 2",
-      "postalCode":"28001",
-      "city":"Madrid",
-      "province":"Madrid",
-      "country":"ES"
-    },
-    "lines":[
-      {"productId":1,"requestedQty":10},
-      {"productId":2,"requestedQty":5}
-    ]
-  }'
-```
-
-### Actualizar shipping de pedido (M3.1)
-```bash
-curl -X PUT http://localhost:8080/api/orders/1/shipping \
-  -H "Content-Type: application/json" \
-  -d '{
-    "carrier":"GLS",
-    "shipping":{
-      "name":"Nuevo Destinatario",
-      "address1":"Avenida Nueva 456",
-      "postalCode":"18001",
-      "city":"Granada",
-      "country":"ES"
-    }
-  }'
-```
-
-### Ver transportistas disponibles (M3.1)
-```bash
-curl http://localhost:8080/api/meta/carriers
-```
-
-### Liberar pedido a picking (M3)
-```bash
-curl -X POST http://localhost:8080/api/orders/1/release
-```
-
-### Ver tarea de picking (M3)
-```bash
-curl http://localhost:8080/api/pick-tasks/1
-```
-
-### Resumen handheld (M3)
-```bash
-curl http://localhost:8080/api/pick-tasks/1/handheld
-```
-
-### Crear PickWave con varios pedidos (M3.2)
-```bash
-curl -X POST http://localhost:8080/api/pick-waves \
-  -H "Content-Type: application/json" \
-  -d '{"orderIds":[1,2]}'
-```
-
-### Iniciar wave (M3.2)
-```bash
-curl -X POST http://localhost:8080/api/pick-waves/1/start
-```
-
-### Ver pick-list de la wave (M3.2)
-```bash
-curl http://localhost:8080/api/pick-waves/1/pick-list
-```
-
-### Picking handheld (M4.0)
-1) Start session
-```bash
-curl -X POST http://localhost:8080/api/picking/sessions/start \
-  -H "Content-Type: application/json" \
-  -d '{"waveId":1}'
-```
-
-2) Scan location
-```bash
-curl -X POST http://localhost:8080/api/picking/sessions/{sessionId}/scan \
-  -H "Content-Type: application/json" \
-  -d '{"code":"A-01-01","qty":1}'
-```
-
-3) Scan product (barcode o SKU) y ver candidates
-```bash
-curl -X POST http://localhost:8080/api/picking/sessions/{sessionId}/scan \
-  -H "Content-Type: application/json" \
-  -d '{"code":"7501234567890","qty":1}'
-```
-
-4) Scan tote (repite hasta completar)
-```bash
-curl -X POST http://localhost:8080/api/picking/sessions/{sessionId}/scan \
-  -H "Content-Type: application/json" \
-  -d '{"code":"TOTE-20251218-0001-01","qty":1}'
-```
-
-5) Complete session (marca wave DONE si todo está completo)
-```bash
-curl -X POST http://localhost:8080/api/picking/sessions/{sessionId}/complete
-```
-
-### Asignar tote a estación de packing (M3.2)
-```bash
-curl -X POST http://localhost:8080/api/totes/TOTE-20251218-0001-01/assign-station \
-  -H "Content-Type: application/json" \
-  -d '{"stationId":1}'
-```
-
-### Ver estaciones de packing (M3.2)
-```bash
-curl http://localhost:8080/api/packing-stations
-```
-
-### Packing handheld (M4)
-Requisitos:
-- La tote debe estar en estado `AT_PACKING` y asignada a la estaci╟№n (`/api/totes/{barcode}/assign-station`).
-- El pedido asociado debe estar en estado `PICKED` (o el PickTask en `DONE`).
-
-### Start packing session (scan tote)
-```bash
-curl -X POST http://localhost:8080/api/packing/sessions/start \
-  -H "Content-Type: application/json" \
-  -d '{"toteBarcode":"TOTE-20251218-0001-01","stationId":1,"operator":"packer-1"}'
-```
-
-### Scan productos (barcode o SKU)
-Ejemplos (de datos seed): `7501234567890` o `PROD-001`
-```bash
-curl -X POST http://localhost:8080/api/packing/sessions/{sessionId}/scan \
-  -H "Content-Type: application/json" \
-  -d '{"code":"7501234567890","qty":1}'
-```
-Repite hasta que la respuesta indique `mode=SET_PACKAGES`.
-
-### Definir bultos (packages) + generar etiquetas
-```bash
-curl -X POST http://localhost:8080/api/packing/sessions/{sessionId}/set-packages \
-  -H "Content-Type: application/json" \
-  -d '{"packageCount":2}'
-```
-
-### Completar packing
-```bash
-curl -X POST http://localhost:8080/api/packing/sessions/{sessionId}/complete
-```
-
-### Consultar shipment + descargar ZPL
-```bash
-curl http://localhost:8080/api/shipments/{shipmentId}
-curl http://localhost:8080/api/shipments/{shipmentId}/packages/{packageId}/label.zpl
-```
-
-### (Opcional) Imprimir en Zebra (TCP 9100)
-Configura `PRINTER_ENABLED=true` y `PRINTER_HOST=<ip>` y luego:
-```bash
-curl -X POST http://localhost:8080/api/shipments/{shipmentId}/print
-```
-
-## 📁 Estructura del Proyecto
+## 🏗️ Project Structure
 
 ```
 wms/
-├── backend/
-│   ├── src/main/
-│   │   ├── java/com/wms/
-│   │   │   ├── config/          # Configuraciones (CORS)
-│   │   │   ├── controller/      # REST Controllers
-│   │   │   ├── dto/             # Data Transfer Objects
-│   │   │   ├── entity/          # JPA Entities
-│   │   │   ├── exception/       # Custom Exceptions
-│   │   │   ├── repository/      # JPA Repositories
-│   │   │   └── service/         # Business Logic
-│   │   └── resources/
-│   │       ├── db/migration/    # Flyway migrations
-│   │       └── application.yml
-│   └── pom.xml
-├── frontend/                    # Frontend (próximamente)
-├── docker/
-│   └── docker-compose.yml
-└── README.md
+├── backend/                 # Spring Boot application
+│   ├── src/main/java/com/wms/
+│   │   ├── controller/      # REST controllers
+│   │   ├── service/         # Business logic
+│   │   ├── repository/      # JPA repositories
+│   │   ├── entity/          # JPA entities
+│   │   ├── dto/             # Data transfer objects
+│   │   ├── config/          # Configuration
+│   │   ├── security/        # JWT authentication
+│   │   └── exception/       # Error handling
+│   └── src/main/resources/
+│       └── db/migration/    # Flyway migrations
+├── frontend/
+│   ├── backoffice/          # Admin web app
+│   ├── handheld/            # Mobile packing app
+│   ├── landing/             # Portfolio landing page
+│   └── shared/              # Shared theme & utilities
+├── nginx/                   # Nginx configuration
+├── docker/                  # PostgreSQL setup
+├── docker-compose.yml       # Full stack deployment
+└── .github/workflows/       # CI/CD pipelines
 ```
 
-## 🛠️ Tecnologías
-
-- **Backend:** Spring Boot 3.2, Java 17
-- **Base de datos:** PostgreSQL 16
-- **Migraciones:** Flyway
-- **Documentación API:** SpringDoc OpenAPI (Swagger)
-- **Validación:** Bean Validation (jakarta.validation)
-- **Contenedores:** Docker Compose
-
-## 📝 Comandos Útiles
+## 🧪 Testing
 
 ```bash
-# Ver logs de PostgreSQL
-docker logs wms-postgres
+# Run all tests
+cd backend
+mvn test
 
-# Parar PostgreSQL
-cd docker && docker compose down
-
-# Parar y eliminar volumen (¡borra datos!)
-cd docker && docker compose down -v
-
-# Compilar backend sin tests
-cd backend && mvn clean package -DskipTests
-
-# Ejecutar con variables de entorno personalizadas
-DB_HOST=mi-servidor DB_PORT=5432 mvn spring-boot:run
+# Run with coverage
+mvn test jacoco:report
 ```
 
-## 🚀 Deploy en Oracle VPS
+## 🚀 Deployment (Oracle VPS)
 
-Para desplegar en un VPS Oracle (Always Free):
+```bash
+# 1. SSH to your VPS
+ssh opc@your-vps-ip
 
-1. Instala Docker y Docker Compose en el VPS
-2. Clona el repositorio
-3. Configura las variables de entorno en el servidor:
-   ```bash
-   export DB_HOST=localhost
-   export DB_PORT=5432
-   export DB_NAME=wms
-   export DB_USER=wms_prod
-   export DB_PASS=contraseña_segura
-   ```
-4. Ejecuta `docker compose up -d` para PostgreSQL
-5. Ejecuta el backend con `java -jar target/wms-backend-1.0.0-SNAPSHOT.jar`
+# 2. Install Docker
+sudo dnf install -y docker docker-compose
+sudo systemctl enable --now docker
+
+# 3. Clone and deploy
+git clone https://github.com/albertogalvez/wms-warehouse-management.git
+cd wms-warehouse-management
+cp .env.example .env
+
+# 4. Edit .env with production values
+nano .env  # Set SPRING_PROFILES_ACTIVE=prod, strong JWT_SECRET
+
+# 5. Start
+docker compose up -d
+```
+
+## 📝 License
+
+MIT License - free to use for educational and commercial purposes.
+
+---
+
+**Built with ❤️ as a portfolio project.**
