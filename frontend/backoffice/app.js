@@ -10,6 +10,7 @@ import { renderWavesList, renderWaveDetail } from "./pages/waves.js";
 import { renderTotes } from "./pages/totes.js";
 import { renderShipments } from "./pages/shipments.js";
 import { renderSettings } from "./pages/settings.js";
+import { renderAdminUsers } from "./pages/admin_users.js";
 
 // Auth check - redirect to login if not authenticated
 if (!isAuthenticated()) {
@@ -93,6 +94,12 @@ const routes = [
 
   { path: "/totes", page: "./pages/totes.html", title: "Totes", handler: renderTotes },
   { path: "/shipments", page: "./pages/shipments.html", title: "Shipments", handler: renderShipments },
+
+  // Guide
+  { path: "/guide", page: "./pages/guide.html", title: "Quick Start Guide", handler: async ({ root }) => { } },
+
+  // Admin routes
+  { path: "/admin/users", page: "./pages/admin_users.html", title: "User Management", handler: renderAdminUsers },
 ];
 
 const router = createRouter({

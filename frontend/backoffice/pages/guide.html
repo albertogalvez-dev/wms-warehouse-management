@@ -1,0 +1,188 @@
+<div class="page-header">
+    <h2 class="section-title">🚀 Quick Start Guide</h2>
+    <p class="text-muted">Learn how to use the WMS end-to-end workflow</p>
+</div>
+
+<div class="guide-content">
+    <div class="guide-steps">
+        <!-- Step 1 -->
+        <div class="guide-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <h3>Create Products</h3>
+                <p>Start by adding products to your warehouse inventory. Each product needs a SKU, name, and barcode for
+                    scanning.</p>
+                <a href="#/products" class="btn btn-outline btn-sm">Go to Products →</a>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="guide-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <h3>Create Orders</h3>
+                <p>Create customer orders with product lines. Orders start in DRAFT status until you release them for
+                    picking.</p>
+                <a href="#/orders/new" class="btn btn-outline btn-sm">Create Order →</a>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="guide-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <h3>Generate Pick Waves</h3>
+                <p>Combine multiple orders into pick waves for efficient warehouse picking. The system groups items by
+                    location.</p>
+                <a href="#/waves" class="btn btn-outline btn-sm">View Waves →</a>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="guide-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <h3>Pick Items</h3>
+                <p>Pickers use Zebra handheld devices to scan locations and items. The system guides them through
+                    optimal paths.</p>
+                <a href="../handheld/login.html" class="btn btn-outline btn-sm" target="_blank">Open Handheld →</a>
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="guide-step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+                <h3>Pack & Ship</h3>
+                <p>At packing stations, operators scan totes, verify items, select carriers, and print shipping labels.
+                </p>
+                <a href="#/shipments" class="btn btn-outline btn-sm">View Shipments →</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="guide-sidebar">
+        <div class="card">
+            <div class="card-header">
+                <h3>📖 Resources</h3>
+            </div>
+            <div class="card-body">
+                <ul class="resource-list">
+                    <li><a href="/swagger-ui/index.html" target="_blank">API Documentation (Swagger)</a></li>
+                    <li><a href="#/settings">API Settings</a></li>
+                    <li><a href="https://github.com/albertogalvez/wms-warehouse-management" target="_blank">GitHub
+                            Repository</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+            </div>
+            <div class="card-body">
+                <ul class="shortcut-list">
+                    <li><kbd>Ctrl</kbd> + <kbd>N</kbd> New Order</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>F</kbd> Search</li>
+                    <li><kbd>Esc</kbd> Close Modal</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .guide-content {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+    }
+
+    .guide-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .guide-step {
+        display: flex;
+        gap: 1.25rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--color-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.125rem;
+        flex-shrink: 0;
+    }
+
+    .step-content h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.125rem;
+    }
+
+    .step-content p {
+        margin: 0 0 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .guide-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .resource-list,
+    .shortcut-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .resource-list li,
+    .shortcut-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .resource-list li:last-child,
+    .shortcut-list li:last-child {
+        border-bottom: none;
+    }
+
+    .resource-list a {
+        color: var(--color-primary);
+        text-decoration: none;
+    }
+
+    .resource-list a:hover {
+        text-decoration: underline;
+    }
+
+    kbd {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: 0.125rem 0.375rem;
+        font-size: 0.75rem;
+        font-family: monospace;
+    }
+
+    @media (max-width: 900px) {
+        .guide-content {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

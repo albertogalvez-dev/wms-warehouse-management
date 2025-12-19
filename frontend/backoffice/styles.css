@@ -96,6 +96,29 @@
   min-height: var(--space-lg);
 }
 
+/* Nav section (Admin Tools) */
+.nav-section {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.nav-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--space-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.nav-section .nav-link {
+  padding-left: calc(var(--space-lg) + 4px);
+}
+
 .sidebar-footer {
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border);

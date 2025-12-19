@@ -1,0 +1,134 @@
+<div class="page-header">
+    <h2 class="section-title">User Management</h2>
+    <p class="text-muted">Create and manage system users</p>
+</div>
+
+<div class="grid grid-2">
+    <!-- Create User Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Create New User</h3>
+        </div>
+        <div class="card-body">
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label for="newUsername">Username</label>
+                    <input type="text" id="newUsername" name="username" required placeholder="Enter username"
+                        autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Password</label>
+                    <input type="password" id="newPassword" name="password" required placeholder="Enter password"
+                        minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="newRole">Role</label>
+                    <select id="newRole" name="role" required>
+                        <option value="PICKER">PICKER - Warehouse picker</option>
+                        <option value="PACKER">PACKER - Packing station operator</option>
+                        <option value="MANAGER">MANAGER - Shift supervisor</option>
+                        <option value="ADMIN">ADMIN - Full system access</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                            <circle cx="8.5" cy="7" r="4" />
+                            <line x1="20" y1="8" x2="20" y2="14" />
+                            <line x1="23" y1="11" x2="17" y2="11" />
+                        </svg>
+                        Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Users -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Existing Users</h3>
+        </div>
+        <div class="card-body">
+            <div id="usersList" class="users-list">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .users-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: var(--bg-light);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .user-details strong {
+        display: block;
+        font-size: 0.9375rem;
+    }
+
+    .user-details small {
+        color: var(--text-muted);
+    }
+
+    .role-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .role-ADMIN {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .role-MANAGER {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .role-PICKER {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .role-PACKER {
+        background: #d1fae5;
+        color: #059669;
+    }
+</style>
