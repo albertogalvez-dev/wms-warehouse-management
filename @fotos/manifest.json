@@ -1,0 +1,100 @@
+[
+  {
+    "route": "/landing/",
+    "filename": "landing.png",
+    "timestamp": "2026-01-14T16:32:08.466Z",
+    "viewport": "1920x1080",
+    "category": "landing"
+  },
+  {
+    "route": "/backoffice/#/dashboard",
+    "filename": "dashboard.png",
+    "timestamp": "2026-01-14T16:32:13.561Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/orders",
+    "filename": "orders.png",
+    "timestamp": "2026-01-14T16:32:15.834Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/orders/new",
+    "filename": "order-create.png",
+    "timestamp": "2026-01-14T16:32:18.108Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/products",
+    "filename": "products.png",
+    "timestamp": "2026-01-14T16:32:20.386Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/waves",
+    "filename": "waves.png",
+    "timestamp": "2026-01-14T16:32:22.629Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/totes",
+    "filename": "totes.png",
+    "timestamp": "2026-01-14T16:32:24.881Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/shipments",
+    "filename": "shipments.png",
+    "timestamp": "2026-01-14T16:32:27.132Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/settings",
+    "filename": "settings.png",
+    "timestamp": "2026-01-14T16:32:29.388Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/guide",
+    "filename": "guide.png",
+    "timestamp": "2026-01-14T16:32:31.661Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/backoffice/#/admin/users",
+    "filename": "admin-users.png",
+    "timestamp": "2026-01-14T16:32:33.934Z",
+    "viewport": "1920x1080",
+    "category": "backoffice"
+  },
+  {
+    "route": "/handheld/",
+    "filename": "handheld-start.png",
+    "timestamp": "2026-01-14T16:32:48.773Z",
+    "viewport": "1920x1080",
+    "category": "handheld"
+  },
+  {
+    "route": "/landing/",
+    "filename": "landing.png",
+    "timestamp": "2026-01-14T16:32:51.052Z",
+    "viewport": "390x844",
+    "category": "landing"
+  },
+  {
+    "route": "/handheld/",
+    "filename": "handheld-start.png",
+    "timestamp": "2026-01-14T16:33:05.822Z",
+    "viewport": "390x844",
+    "category": "handheld"
+  }
+]
