@@ -16,6 +16,7 @@
 import { chromium, Browser, Page, BrowserContext } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // ============================================
 // Configuration
@@ -27,6 +28,10 @@ const PASSWORD = process.env.WMS_E2E_PASS || 'admin123';
 
 const DESKTOP_VIEWPORT = { width: 1920, height: 1080 };
 const MOBILE_VIEWPORT = { width: 390, height: 844 }; // iPhone 13
+
+// ES modules don't have __dirname, so we compute it
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const OUTPUT_DIR = path.resolve(__dirname, '..', '@fotos');
 const DESKTOP_DIR = path.join(OUTPUT_DIR, 'desktop');
@@ -133,48 +138,134 @@ async function waitForHealth(maxRetries = 30, delayMs = 2000): Promise<boolean> 
 }
 
 // ============================================
-// Screenshot Capture
+// Authentication
 // ============================================
 
-async function login(page: Page, loginUrl: string): Promise<boolean> {
-    console.log(`🔐 Logging in at ${loginUrl}...`);
+async function loginBackoffice(page: Page): Promise<boolean> {
+    const loginUrl = `${BASE_URL}/backoffice/login.html`;
+    console.log(`🔐 Logging in to Backoffice at ${loginUrl}...`);
 
     try {
-        await page.goto(loginUrl, { waitUntil: 'networkidle' });
+        await page.goto(loginUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
-        // Wait for login form
-        await page.waitForSelector('input[name="username"], #username, input[type="text"]', { timeout: 10000 });
+        // CRITICAL: Set the API base URL in localStorage to use the nginx proxy
+        // The frontend config defaults to localhost:8080 for port 8081, but
+        // in Docker setup, the backend is only accessible via nginx proxy
+        await page.evaluate((baseUrl) => {
+            localStorage.setItem('wms_backoffice_api_base_url', baseUrl);
+        }, BASE_URL);
+        console.log(`  📍 Set API base URL: ${BASE_URL}`);
 
-        // Fill credentials
-        const usernameInput = await page.$('input[name="username"]') || await page.$('#username') || await page.$('input[type="text"]');
-        const passwordInput = await page.$('input[name="password"]') || await page.$('#password') || await page.$('input[type="password"]');
+        // Reload to pick up the new API URL
+        await page.reload({ waitUntil: 'networkidle' });
 
-        if (usernameInput && passwordInput) {
-            await usernameInput.fill(USERNAME);
-            await passwordInput.fill(PASSWORD);
+        // Wait for the login form to be ready
+        await page.waitForSelector('#loginForm', { timeout: 10000 });
+        await page.waitForSelector('#username', { timeout: 5000 });
+        await page.waitForSelector('#password', { timeout: 5000 });
 
-            // Submit form
-            const submitBtn = await page.$('button[type="submit"]') || await page.$('#loginBtn') || await page.$('button');
-            if (submitBtn) {
-                await submitBtn.click();
-                await page.waitForTimeout(2000);
+        // Clear and fill username
+        await page.fill('#username', '');
+        await page.fill('#username', USERNAME);
 
-                // Check if login was successful (no longer on login page)
-                const currentUrl = page.url();
-                if (!currentUrl.includes('login')) {
-                    console.log('✅ Login successful!');
-                    return true;
-                }
-            }
+        // Clear and fill password
+        await page.fill('#password', '');
+        await page.fill('#password', PASSWORD);
+
+        console.log(`  📝 Filled credentials: ${USERNAME} / ****`);
+
+        // Click submit button and wait for navigation
+        await Promise.all([
+            page.waitForURL('**/index.html**', { timeout: 15000 }).catch(() => { }),
+            page.click('#loginBtn'),
+        ]);
+
+        // Wait for the app to load after login
+        await page.waitForTimeout(2000);
+
+        // Check if we're on the main app (not login page anymore)
+        const currentUrl = page.url();
+        const isLoggedIn = currentUrl.includes('index.html') || !currentUrl.includes('login');
+
+        if (isLoggedIn) {
+            console.log('  ✅ Backoffice login successful!');
+            // Wait for dashboard to render
+            await page.waitForSelector('.sidebar, #appMain, .nav-link', { timeout: 10000 }).catch(() => { });
+            return true;
         }
 
-        console.warn('⚠️ Login form not found or login failed');
+        // Check for error message
+        const errorVisible = await page.$('.error-message.show');
+        if (errorVisible) {
+            const errorText = await errorVisible.textContent();
+            console.error(`  ❌ Login failed: ${errorText}`);
+        } else {
+            console.error('  ❌ Login failed: still on login page');
+        }
+
         return false;
     } catch (e) {
-        console.error('❌ Login error:', e);
+        console.error(`  ❌ Login error: ${e}`);
         return false;
     }
 }
+
+async function loginHandheld(page: Page): Promise<boolean> {
+    const loginUrl = `${BASE_URL}/handheld/login.html`;
+    console.log(`🔐 Logging in to Handheld at ${loginUrl}...`);
+
+    try {
+        await page.goto(loginUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+        // CRITICAL: Set the API base URL in localStorage to use the nginx proxy
+        await page.evaluate((baseUrl) => {
+            localStorage.setItem('wms_handheld_api_base_url', baseUrl);
+        }, BASE_URL);
+        console.log(`  📍 Set API base URL: ${BASE_URL}`);
+
+        // Reload to pick up the new API URL
+        await page.reload({ waitUntil: 'networkidle' });
+
+        // Wait for the login form
+        await page.waitForSelector('#loginForm', { timeout: 10000 });
+        await page.waitForSelector('#username', { timeout: 5000 });
+        await page.waitForSelector('#password', { timeout: 5000 });
+
+        // Fill credentials
+        await page.fill('#username', '');
+        await page.fill('#username', USERNAME);
+        await page.fill('#password', '');
+        await page.fill('#password', PASSWORD);
+
+        console.log(`  📝 Filled credentials: ${USERNAME} / ****`);
+
+        // Click submit and wait
+        await Promise.all([
+            page.waitForURL('**/index.html**', { timeout: 15000 }).catch(() => { }),
+            page.click('#loginBtn'),
+        ]);
+
+        await page.waitForTimeout(2000);
+
+        const currentUrl = page.url();
+        const isLoggedIn = currentUrl.includes('index.html') || !currentUrl.includes('login');
+
+        if (isLoggedIn) {
+            console.log('  ✅ Handheld login successful!');
+            return true;
+        }
+
+        console.error('  ❌ Handheld login failed');
+        return false;
+    } catch (e) {
+        console.error(`  ❌ Handheld login error: ${e}`);
+        return false;
+    }
+}
+
+// ============================================
+// Screenshot Capture
+// ============================================
 
 async function captureScreenshot(
     page: Page,
@@ -204,14 +295,16 @@ async function captureScreenshot(
             await page.waitForSelector(route.waitForSelector, { timeout: 10000 }).catch(() => { });
         }
 
-        // Extra wait for dynamic content
-        await page.waitForTimeout(1500);
+        // Extra wait for dynamic content to load
+        await page.waitForTimeout(2000);
 
         // Take full page screenshot
         await page.screenshot({
             path: filepath,
             fullPage: true,
         });
+
+        console.log(`    ✓ Saved: ${filename}`);
 
         return {
             route: route.path,
@@ -235,10 +328,12 @@ async function main(): Promise<void> {
     const desktopOnly = args.includes('--desktop-only');
     const mobileOnly = args.includes('--mobile-only');
 
+    console.log('');
     console.log('🚀 WMS Screenshot Capture');
     console.log('========================');
     console.log(`Base URL: ${BASE_URL}`);
     console.log(`Username: ${USERNAME}`);
+    console.log(`Password: ${'*'.repeat(PASSWORD.length)}`);
     console.log(`Output: ${OUTPUT_DIR}`);
     console.log('');
 
@@ -251,7 +346,10 @@ async function main(): Promise<void> {
     await waitForHealth();
 
     // Launch browser
-    const browser: Browser = await chromium.launch({ headless: true });
+    const browser: Browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const manifest: ManifestEntry[] = [];
 
     try {
@@ -268,31 +366,48 @@ async function main(): Promise<void> {
             });
             const desktopPage: Page = await desktopContext.newPage();
 
-            // Capture landing (public)
+            // Capture landing (public, no login needed)
             for (const route of ROUTES.landing) {
                 const entry = await captureScreenshot(desktopPage, route, DESKTOP_VIEWPORT, DESKTOP_DIR, 'landing');
                 if (entry) manifest.push(entry);
             }
 
             // Login for backoffice
-            await login(desktopPage, `${BASE_URL}/backoffice/login.html`);
+            const backofficeLoggedIn = await loginBackoffice(desktopPage);
 
-            // Capture backoffice routes
-            for (const route of ROUTES.backoffice) {
-                const entry = await captureScreenshot(desktopPage, route, DESKTOP_VIEWPORT, DESKTOP_DIR, 'backoffice');
-                if (entry) manifest.push(entry);
+            if (backofficeLoggedIn) {
+                // Capture backoffice routes
+                for (const route of ROUTES.backoffice) {
+                    const entry = await captureScreenshot(desktopPage, route, DESKTOP_VIEWPORT, DESKTOP_DIR, 'backoffice');
+                    if (entry) manifest.push(entry);
+                }
+            } else {
+                console.error('\n⚠️ Skipping backoffice routes due to login failure');
             }
 
-            // Login for handheld (separate session may be needed)
-            await login(desktopPage, `${BASE_URL}/handheld/login.html`);
-
-            // Capture handheld routes
-            for (const route of ROUTES.handheld) {
-                const entry = await captureScreenshot(desktopPage, route, DESKTOP_VIEWPORT, DESKTOP_DIR, 'handheld');
-                if (entry) manifest.push(entry);
-            }
-
+            // New context for handheld (fresh session)
             await desktopContext.close();
+
+            const handheldDesktopContext: BrowserContext = await browser.newContext({
+                viewport: DESKTOP_VIEWPORT,
+                ignoreHTTPSErrors: true,
+            });
+            const handheldDesktopPage: Page = await handheldDesktopContext.newPage();
+
+            // Login for handheld
+            const handheldLoggedIn = await loginHandheld(handheldDesktopPage);
+
+            if (handheldLoggedIn) {
+                // Capture handheld routes
+                for (const route of ROUTES.handheld) {
+                    const entry = await captureScreenshot(handheldDesktopPage, route, DESKTOP_VIEWPORT, DESKTOP_DIR, 'handheld');
+                    if (entry) manifest.push(entry);
+                }
+            } else {
+                console.error('\n⚠️ Skipping handheld routes due to login failure');
+            }
+
+            await handheldDesktopContext.close();
         }
 
         // =====================
@@ -306,6 +421,7 @@ async function main(): Promise<void> {
                 viewport: MOBILE_VIEWPORT,
                 ignoreHTTPSErrors: true,
                 isMobile: true,
+                hasTouch: true,
             });
             const mobilePage: Page = await mobileContext.newPage();
 
@@ -316,12 +432,16 @@ async function main(): Promise<void> {
             }
 
             // Login for handheld (main mobile target)
-            await login(mobilePage, `${BASE_URL}/handheld/login.html`);
+            const mobileLoggedIn = await loginHandheld(mobilePage);
 
-            // Capture handheld routes  
-            for (const route of ROUTES.handheld) {
-                const entry = await captureScreenshot(mobilePage, route, MOBILE_VIEWPORT, MOBILE_DIR, 'handheld');
-                if (entry) manifest.push(entry);
+            if (mobileLoggedIn) {
+                // Capture handheld routes  
+                for (const route of ROUTES.handheld) {
+                    const entry = await captureScreenshot(mobilePage, route, MOBILE_VIEWPORT, MOBILE_DIR, 'handheld');
+                    if (entry) manifest.push(entry);
+                }
+            } else {
+                console.error('\n⚠️ Skipping mobile handheld due to login failure');
             }
 
             await mobileContext.close();
@@ -338,9 +458,18 @@ async function main(): Promise<void> {
         console.log(`Total screenshots: ${manifest.length}`);
         console.log(`Output directory: ${OUTPUT_DIR}`);
 
+        if (manifest.length === 0) {
+            console.error('\n⚠️ WARNING: No screenshots were captured!');
+            console.error('   Check that the WMS backend is running and credentials are correct.');
+            process.exit(1);
+        }
+
     } finally {
         await browser.close();
     }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+});
