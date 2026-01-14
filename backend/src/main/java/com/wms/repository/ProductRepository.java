@@ -21,6 +21,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "(:query IS NULL OR :query = '' OR " +
             "LOWER(p.sku) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(p.barcode) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Product> search(@Param("query") String query, Pageable pageable);
 

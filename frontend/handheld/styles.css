@@ -35,6 +35,12 @@ body {
     font-size: 1.125rem;
 }
 
+.hh-logo-img {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
 .hh-station {
     font-size: 0.875rem;
     opacity: 0.9;
@@ -424,6 +430,47 @@ body {
     font-family: var(--font-mono);
     color: var(--text-2);
     margin-top: 8px;
+}
+
+/* ========== LABEL LIST ========== */
+.hh-label-card {
+    margin-bottom: var(--space-md);
+}
+
+.hh-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.hh-label-title {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.hh-label-tracking {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--text-2);
+}
+
+.hh-label-preview {
+    width: 100%;
+    height: 70px;
+    font-size: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 8px;
+    margin-bottom: var(--space-sm);
+    resize: vertical;
+}
+
+.hh-label-meta {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-bottom: var(--space-sm);
 }
 
 /* ========== TOAST ========== */

@@ -11,14 +11,16 @@ public class PickListResponse {
         private String locationCode;
         private String sku;
         private String productName;
+        private String imageUrl;
         private int totalQtyAssigned;
         private List<OrderBreakdown> breakdown;
 
-        public LocationGroup(String locationCode, String sku, String productName,
+        public LocationGroup(String locationCode, String sku, String productName, String imageUrl,
                 int totalQtyAssigned, List<OrderBreakdown> breakdown) {
             this.locationCode = locationCode;
             this.sku = sku;
             this.productName = productName;
+            this.imageUrl = imageUrl;
             this.totalQtyAssigned = totalQtyAssigned;
             this.breakdown = breakdown;
         }
@@ -33,6 +35,10 @@ public class PickListResponse {
 
         public String getProductName() {
             return productName;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
         }
 
         public int getTotalQtyAssigned() {

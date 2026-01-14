@@ -1,26 +1,20 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Warehouse Management System</title>
-    <link rel="stylesheet" href="../shared/theme.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="shared/theme.css">
+    <link rel="stylesheet" href="landing/styles.css">
 </head>
 
 <body>
     <!-- ========== TOPBAR ========== -->
     <header class="topbar">
         <div class="container topbar-inner">
-            <a href="#" class="logo">
-                <span class="logo-icon">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <rect width="32" height="32" rx="8" fill="#004090" />
-                        <path d="M8 22V10l4 6 4-6v12M20 10h6v3h-6v3h5v3h-5v3" stroke="#fff" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </span>
+            <a href="./" class="logo">
+                <img src="assets/logo.png" alt="WMS Logo" class="logo-img">
                 <span class="logo-text">WMS</span>
             </a>
 
@@ -32,8 +26,8 @@
             </nav>
 
             <div class="nav-cta">
-                <a href="/backoffice/" class="btn btn-outline btn-sm">Open Backoffice</a>
-                <a href="/handheld/" class="btn btn-primary btn-sm">Open Handheld</a>
+                <a href="backoffice/" class="btn btn-outline btn-sm">Open Backoffice</a>
+                <a href="handheld/" class="btn btn-primary btn-sm">Open Handheld</a>
             </div>
         </div>
     </header>
@@ -44,7 +38,7 @@
             <div class="hero-content">
                 <h1 class="hero-title">Warehouse Management System</h1>
                 <p class="hero-subtitle">
-                    Batch picking, packing stations, multi-package labels — built with Java + PostgreSQL.
+                    Batch picking, packing stations, multi-package labels - built with Java + PostgreSQL.
                     <br>Deployable to Oracle VPS Always Free.
                 </p>
                 <div class="hero-cta">
@@ -82,7 +76,7 @@
                     <div class="preview-body preview-handheld">
                         <div class="preview-scan">SCAN PRODUCT</div>
                         <div class="preview-input">7501234567890</div>
-                        <div class="preview-status text-ok">✓ SKU-001 scanned</div>
+                        <div class="preview-status text-ok">OK SKU-001 scanned</div>
                     </div>
                 </div>
             </div>
@@ -209,7 +203,7 @@
                     <div class="step-number">04</div>
                     <div class="timeline-content">
                         <h4>Zebra Picking</h4>
-                        <p>Scan location → product → tote with handheld device</p>
+                        <p>Scan location -> product -> tote with handheld device</p>
                     </div>
                 </div>
 
@@ -256,22 +250,22 @@
 
             <div class="grid grid-4 integrations-grid">
                 <div class="integration-card">
-                    <div class="integration-icon">🔌</div>
+                    <div class="integration-icon">ERP</div>
                     <h4>Generic ERP</h4>
                     <p>REST API connector</p>
                 </div>
                 <div class="integration-card">
-                    <div class="integration-icon">🔔</div>
+                    <div class="integration-icon">WH</div>
                     <h4>Webhooks</h4>
                     <p>Real-time events</p>
                 </div>
                 <div class="integration-card">
-                    <div class="integration-icon">📄</div>
+                    <div class="integration-icon">CSV</div>
                     <h4>CSV Import</h4>
                     <p>Bulk data loading</p>
                 </div>
                 <div class="integration-card">
-                    <div class="integration-icon">📱</div>
+                    <div class="integration-icon">ZBR</div>
                     <h4>Zebra DataWedge</h4>
                     <p>Barcode scanning</p>
                 </div>
@@ -296,7 +290,7 @@
                         </div>
                         <h3>Backoffice</h3>
                         <p class="text-muted">Manage orders, waves, and shipments from your desktop browser.</p>
-                        <a href="/backoffice/" class="btn btn-primary btn-lg btn-block mt-md">Open Backoffice</a>
+                        <a href="backoffice/" class="btn btn-primary btn-lg btn-block mt-md">Open Backoffice</a>
                     </div>
                 </div>
 
@@ -310,7 +304,7 @@
                         </div>
                         <h3>Handheld</h3>
                         <p class="text-muted">Scan and pack orders using a mobile device or Zebra terminal.</p>
-                        <a href="/handheld/" class="btn btn-accent btn-lg btn-block mt-md">Open Handheld</a>
+                        <a href="handheld/" class="btn btn-accent btn-lg btn-block mt-md">Open Handheld</a>
                     </div>
                 </div>
             </div>
@@ -326,7 +320,10 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <span class="logo-text">WMS</span>
+                    <div class="logo">
+                        <img src="assets/logo.png" alt="WMS Logo" class="logo-img">
+                        <span class="logo-text">WMS</span>
+                    </div>
                     <p class="text-muted">Warehouse Management System</p>
                 </div>
                 <div class="footer-stack">
@@ -341,19 +338,19 @@
                 <div class="footer-links">
                     <h4>Links</h4>
                     <ul>
-                        <li><a href="/backoffice/">Backoffice</a></li>
-                        <li><a href="/handheld/">Handheld</a></li>
-                        <li><a href="/swagger-ui/index.html">API Docs</a></li>
+                        <li><a href="backoffice/">Backoffice</a></li>
+                        <li><a href="handheld/">Handheld</a></li>
+                        <li><a href="swagger-ui/index.html">API Docs</a></li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2024 WMS Project. Educational portfolio project.</p>
+                <p>&copy; 2025 WMS Project. Educational portfolio project.</p>
             </div>
         </div>
     </footer>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="landing/app.js"></script>
 </body>
 
 </html>

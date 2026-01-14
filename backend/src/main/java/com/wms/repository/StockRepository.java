@@ -10,10 +10,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
+
+    interface StockSummaryRow {
+        Long getProductId();
+        Long getQuantity();
+        String getLocationCode();
+    }
 
     Optional<Stock> findByProductAndLocation(Product product, Location location);
 
@@ -27,4 +35,9 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     @Query("SELECT s FROM Stock s JOIN FETCH s.product JOIN FETCH s.location")
     Page<Stock> findAllWithDetails(Pageable pageable);
+
+    @Query("SELECT s.product.id as productId, SUM(s.quantity) as quantity, MIN(s.location.code) as locationCode " +
+            "FROM Stock s WHERE s.product.id IN :productIds GROUP BY s.product.id")
+    List<StockSummaryRow> findStockSummaryByProductIds(
+            @Param("productIds") Collection<Long> productIds);
 }

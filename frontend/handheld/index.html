@@ -14,11 +14,7 @@
     <header class="hh-header">
         <div class="hh-header-content">
             <div class="hh-logo">
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                    <rect width="32" height="32" rx="6" fill="#fff" />
-                    <path d="M8 22V10l4 6 4-6v12" stroke="#004090" stroke-width="2" />
-                    <path d="M20 10h5v3h-5v3h4v3h-4v3" stroke="#004090" stroke-width="2" />
-                </svg>
+                <img src="../assets/logo.png" alt="WMS Logo" class="hh-logo-img">
                 <span>WMS Packing</span>
             </div>
             <div id="stationDisplay" class="hh-station"></div>
@@ -63,7 +59,7 @@
         <!-- ========== VIEW: START SESSION ========== -->
         <div id="viewStart" class="hh-view hidden">
             <div class="hh-instruction">
-                <div class="hh-instruction-icon">📦</div>
+                <div class="hh-instruction-icon">SCAN</div>
                 <div class="hh-instruction-text">SCAN TOTE</div>
                 <div class="hh-instruction-hint">Scan tote barcode to begin packing</div>
             </div>
@@ -108,7 +104,7 @@
             </div>
 
             <button id="btnFinishScan" class="hh-btn hh-btn-accent hh-btn-block hidden">
-                ✓ All Items Scanned — Next Step
+                OK All Items Scanned > Next Step
             </button>
         </div>
 
@@ -121,7 +117,7 @@
                 </div>
                 <div class="hh-card-body text-center">
                     <div class="hh-package-counter">
-                        <button class="hh-counter-btn" onclick="adjustPackages(-1)">−</button>
+                        <button class="hh-counter-btn" onclick="adjustPackages(-1)">-</button>
                         <span id="packageCountDisplay" class="hh-counter-value">1</span>
                         <button class="hh-counter-btn" onclick="adjustPackages(1)">+</button>
                     </div>
@@ -130,7 +126,7 @@
                         Generate Labels
                     </button>
                     <button class="hh-btn hh-btn-ghost hh-btn-block" onclick="showView('packing')">
-                        ← Back to Scanning
+                        Back to Scanning
                     </button>
                 </div>
             </div>
@@ -139,7 +135,7 @@
         <!-- ========== VIEW: COMPLETE ========== -->
         <div id="viewComplete" class="hh-view hidden">
             <div class="hh-success-banner">
-                <div class="hh-success-icon">✓</div>
+                <div class="hh-success-icon">OK</div>
                 <div class="hh-success-text">Packing Complete!</div>
                 <div id="doneOrderRef" class="hh-success-ref">Order #XXX</div>
             </div>
@@ -154,7 +150,7 @@
             </div>
 
             <button id="btnNextTote" class="hh-btn hh-btn-primary hh-btn-block">
-                Pack Next Tote →
+                Pack Next Tote
             </button>
         </div>
     </main>

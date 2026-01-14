@@ -10,6 +10,18 @@
     --accent-orange: #E05000;
     --accent-orange-light: #FFF4EE;
 
+    /* === Legacy Alias Variables === */
+    --color-primary: var(--brand-blue);
+    --color-primary-dark: var(--brand-blue-2);
+    --color-accent: var(--accent-orange);
+    --color-accent-dark: #C04500;
+    --color-dark: var(--bg-dark);
+    --text-primary: var(--text);
+    --text-secondary: var(--text-2);
+    --text-muted: var(--muted);
+    --border-color: var(--border);
+    --bg-light: var(--bg-soft);
+
     /* === Backgrounds === */
     --bg: #FFFFFF;
     --bg-soft: #F5F7FB;

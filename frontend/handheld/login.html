@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>WMS Handheld — Login</title>
+    <title>WMS Handheld - Login</title>
     <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -22,6 +22,19 @@
             text-align: center;
         }
 
+        .login-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .login-logo-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+        }
+
         .login-header h1 {
             font-size: 1.5rem;
             margin: 0;
@@ -29,7 +42,7 @@
 
         .login-header p {
             opacity: 0.8;
-            margin: 0.5rem 0 0;
+            margin: 0.25rem 0 0;
             font-size: 0.875rem;
         }
 
@@ -142,8 +155,13 @@
 
 <body>
     <header class="login-header">
-        <h1>📱 WMS Handheld</h1>
-        <p>Packing Terminal</p>
+        <div class="login-brand">
+            <img src="../assets/logo.png" alt="WMS Logo" class="login-logo-img">
+            <div>
+                <h1>WMS Handheld</h1>
+                <p>Packing Terminal</p>
+            </div>
+        </div>
     </header>
 
     <main class="login-main">
@@ -164,21 +182,20 @@
                 </div>
 
                 <button type="submit" class="btn-login" id="loginBtn">
-                    🔐 Sign In
+                    Sign In
                 </button>
             </form>
         </div>
     </main>
 
     <footer class="login-footer">
-        <a href="/landing/">← Back to Home</a>
+        <a href="../">Back to Home</a>
     </footer>
 
     <script type="module">
         import { login, isAuthenticated } from '../shared/auth.js';
         import { getApiBaseUrl } from './config.js';
 
-        // If already authenticated, redirect to main app
         if (isAuthenticated()) {
             window.location.href = './index.html';
         }
@@ -199,7 +216,7 @@
             }
 
             loginBtn.disabled = true;
-            loginBtn.textContent = '⏳ Signing in...';
+            loginBtn.textContent = 'Signing in...';
             errorDiv.classList.remove('show');
 
             try {
@@ -209,12 +226,12 @@
             } catch (err) {
                 showError(err.message || 'Login failed');
                 loginBtn.disabled = false;
-                loginBtn.textContent = '🔐 Sign In';
+                loginBtn.textContent = 'Sign In';
             }
         });
 
         function showError(message) {
-            errorDiv.textContent = '❌ ' + message;
+            errorDiv.textContent = message;
             errorDiv.classList.add('show');
         }
     </script>

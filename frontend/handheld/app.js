@@ -23,6 +23,7 @@ let state = {
     stationId: localStorage.getItem("wms_station_id") || null,
     operator: localStorage.getItem("wms_operator") || "Operator",
     sessionId: null,
+    shipmentId: null,
     lines: [],
     toteInfo: {},
     packages: []
@@ -74,6 +75,17 @@ function showView(viewName) {
     }
 }
 
+function adjustPackages(delta) {
+    const current = parseInt(inputs.packageCount.textContent, 10) || 1;
+    let next = current + delta;
+    if (next < 1) next = 1;
+    if (next > 20) next = 20;
+    inputs.packageCount.textContent = String(next);
+}
+
+window.showView = showView;
+window.adjustPackages = adjustPackages;
+
 function updateHeader() {
     const label = inputs.station.options[inputs.station.selectedIndex]?.text || "Unknown";
     document.getElementById("stationDisplay").textContent = `Station: ${label} | Op: ${state.operator}`;
@@ -82,9 +94,9 @@ function updateHeader() {
 function toast(msg, type = "info") {
     const el = document.getElementById("toast");
     el.textContent = msg;
-    el.className = "show";
+    el.classList.add("show");
     el.style.backgroundColor = type === "error" ? "#dc2626" : (type === "success" ? "#16a34a" : "#374151");
-    setTimeout(() => el.className = "", 3000);
+    setTimeout(() => el.classList.remove("show"), 3000);
 }
 
 // LOGIC
@@ -93,9 +105,7 @@ function toast(msg, type = "info") {
 document.getElementById("btnInitStation").addEventListener("click", () => {
     const stationId = inputs.station.value;
     const operator = inputs.operator.value;
-    const url = inputs.apiUrl.value;
-
-    if (!url) return toast("API URL required", "error");
+    const url = inputs.apiUrl.value.trim();
 
     saveApiBaseUrl(url);
     localStorage.setItem("wms_station_id", stationId);
@@ -115,6 +125,7 @@ async function startSession() {
 
     const errorEl = document.getElementById("startError");
     errorEl.textContent = "";
+    errorEl.classList.add("hidden");
 
     try {
         const res = await api.post("/api/packing/sessions/start", {
@@ -125,6 +136,8 @@ async function startSession() {
 
         state.sessionId = res.sessionId;
         state.lines = res.lines;
+        state.packages = [];
+        state.shipmentId = res.shipmentId || null;
         state.toteInfo = {
             tote: res.toteBarcode,
             order: res.externalRef,
@@ -137,18 +150,17 @@ async function startSession() {
         if (res.mode === "SET_PACKAGES") {
             showView("packages");
         } else if (res.mode === "READY_TO_COMPLETE") {
-            // If recovery
-            completeSession(); // Or jump to complete view? Let's just go to complete if done
-            renderCompleteUI(res.shipmentId); // We'd need to fetch shipment details or handle this case
-            // For simplicity, if ready to complete, we might assume scanned.
-            // Let's stick to simple flow: if partial, go to packing.
-            showView("packing");
+            await completeSession();
+            await loadShipmentPackages();
+            renderCompleteUI();
+            showView("complete");
         } else {
             showView("packing");
         }
 
     } catch (err) {
-        errorEl.textContent = err.message;
+        errorEl.textContent = err.message || "Failed to start session";
+        errorEl.classList.remove("hidden");
         inputs.tote.value = "";
         inputs.tote.focus();
         toast("Error starting session", "error");
@@ -178,26 +190,29 @@ function renderPackingUI() {
         const isDone = line.packedQty >= line.requiredQty;
 
         const div = document.createElement("div");
-        div.className = `packing-line ${isDone ? "complete" : ""}`;
+        div.className = `hh-item ${isDone ? "complete" : ""}`;
         div.innerHTML = `
-      <div class="product-info">
-        <span class="product-sku">${line.sku}</span>
-        <span class="product-name">${line.productName}</span>
+      <div class="hh-item-info">
+        <div class="hh-item-sku">${line.sku}</div>
+        <div class="hh-item-name">${line.productName}</div>
       </div>
-      <div class="qty-badge ${isDone ? "ok" : ""}">${line.packedQty}/${line.requiredQty}</div>
+      <div class="hh-item-qty">${line.packedQty}/${line.requiredQty}</div>
     `;
         listEl.appendChild(div);
     });
 
-    const percent = Math.round((totalPacked / totalReq) * 100);
+    const percent = totalReq ? Math.round((totalPacked / totalReq) * 100) : 0;
     document.getElementById("packProgress").textContent = `${percent}%`;
 
-    const isAllDone = totalPacked >= totalReq;
+    const isAllDone = totalReq > 0 && totalPacked >= totalReq;
     const btnNext = document.getElementById("btnFinishScan");
 
     if (isAllDone) {
         btnNext.classList.remove("hidden");
-        document.getElementById("scanMsg").innerHTML = `<div class="success-msg">All items packed! Proceed to box setup.</div>`;
+        const scanMsg = document.getElementById("scanMsg");
+        scanMsg.textContent = "All items packed! Proceed to box setup.";
+        scanMsg.classList.remove("text-err");
+        scanMsg.classList.add("text-ok");
     } else {
         btnNext.classList.add("hidden");
     }
@@ -209,6 +224,7 @@ async function scanProduct() {
 
     const msgEl = document.getElementById("scanMsg");
     msgEl.textContent = "";
+    msgEl.classList.remove("text-err", "text-ok");
 
     try {
         const res = await api.post(`/api/packing/sessions/${state.sessionId}/scan`, {
@@ -219,20 +235,23 @@ async function scanProduct() {
         state.lines = res.lines;
         renderPackingUI();
 
-        if (res.lastScanResult && res.lastScanResult.status === "ERROR") {
-            msgEl.innerHTML = `<div class="error-msg">${res.lastScanResult.message}</div>`;
-            toast("Scan Error", "error");
-            // Select all text for easy retry
-            inputs.product.select();
-        } else {
-            msgEl.innerHTML = `<div class="success-msg">${res.lastScanResult.message}</div>`;
-            inputs.product.value = ""; // Clear on success
+        if (res.lastScanResult) {
+            msgEl.textContent = res.lastScanResult.message || "";
+            if (res.lastScanResult.status === "ERROR") {
+                msgEl.classList.add("text-err");
+                toast("Scan Error", "error");
+                inputs.product.select();
+            } else {
+                msgEl.classList.add("text-ok");
+                inputs.product.value = "";
+            }
         }
 
     } catch (err) {
-        msgEl.innerHTML = `<div class="error-msg">${err.message}</div>`;
+        msgEl.textContent = err.message || "Scan failed";
+        msgEl.classList.add("text-err");
         inputs.product.select();
-        toast(err.message, "error");
+        toast(err.message || "Scan failed", "error");
     }
 }
 
@@ -253,11 +272,15 @@ document.getElementById("btnConfirmPackages").addEventListener("click", async ()
         });
 
         state.packages = res.packages || [];
+        state.shipmentId = res.shipmentId || state.shipmentId;
 
         // Auto-complete session after generating labels
         await completeSession();
 
         // Show success view
+        if (!state.packages.length) {
+            await loadShipmentPackages();
+        }
         renderCompleteUI();
         showView("complete");
 
@@ -271,73 +294,87 @@ async function completeSession() {
     await api.post(`/api/packing/sessions/${state.sessionId}/complete`, {});
 }
 
+async function loadShipmentPackages() {
+    if (!state.shipmentId) return;
+    try {
+        const shipment = await api.get(`/api/shipments/${state.shipmentId}`);
+        state.packages = shipment.packages || [];
+    } catch (err) {
+        toast(err.message || "Failed to load labels", "error");
+    }
+}
+
 function renderCompleteUI() {
-    document.getElementById("doneOrderRef").textContent = state.toteInfo.order;
+    document.getElementById("doneOrderRef").textContent = state.toteInfo.order || "";
     const list = document.getElementById("labelsList");
     list.innerHTML = "";
 
-    state.packages.forEach(pkg => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.style.padding = "1rem";
-        div.style.marginTop = "1rem";
-        div.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:0.5rem">Box ${pkg.packageNo}</div>
-            <div class="mono" style="font-size:0.9em; word-break:break-all; margin-bottom:0.5rem">${pkg.trackingCode}</div>
-            <button class="btn btn-secondary" style="margin:0" onclick="window.open('${getApiBaseUrl()}/api/shipments/${state.sessionId /* Logic error here, we need shipmentId, but backend returns packages ok. */}/packages/${pkg.packageId}/label.zpl', '_blank')">Download Label</button>
-            <div style="font-size:0.8em; color:#6b7280; margin-top:0.5rem">Format: ${pkg.labelFormat}</div>
-        `;
-        // Fix for download link: config.js isn't global, constructing raw link might fail if not careful.
-        // Actually, let's just use a simple mock download or alert for now since we don't have a robust download helper in this simple app.
-        // Better: Use a data attribute and a global click handler or just a simple window.open if we trust the URL.
-        // Since SetPackagesResponse returns shipmentId, let's use that if available.
-        list.appendChild(div);
-    });
+    if (!state.packages || state.packages.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.textAlign = "center";
+        empty.style.color = "var(--muted)";
+        empty.textContent = "No labels available.";
+        list.appendChild(empty);
+        return;
+    }
 
-    // Quick fix for the button onclick above:
-    // We can't use inline onclick with module scope easily. 
-    // Let's re-render using DOM elements to attach events properly.
-    list.innerHTML = "";
-    state.packages.forEach(pkg => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.style.padding = "1rem";
-        div.style.marginTop = "1rem";
+    state.packages.forEach((pkg) => {
+        const packageId = pkg.packageId || pkg.id;
+        const card = document.createElement("div");
+        card.className = "hh-card hh-label-card";
 
-        // ZPL Preview (truncated)
-        const zplPreview = pkg.labelZplPreview || "ZPL...";
+        const body = document.createElement("div");
+        body.className = "hh-card-body";
 
-        const inner = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
-                <span style="font-weight:bold">Box ${pkg.packageNo}</span>
-                <span class="mono" style="font-size:0.8em">${pkg.trackingCode}</span>
-            </div>
-            <textarea readonly style="width:100%; height:60px; font-size:0.7em; margin-bottom:0.5rem; border:1px solid #eee">${zplPreview}</textarea>
-         `;
-        div.innerHTML = inner;
+        const row = document.createElement("div");
+        row.className = "hh-label-row";
+
+        const title = document.createElement("div");
+        title.className = "hh-label-title";
+        title.textContent = `Box ${pkg.packageNo}`;
+
+        const tracking = document.createElement("div");
+        tracking.className = "hh-label-tracking";
+        tracking.textContent = pkg.trackingCode || "";
+
+        row.appendChild(title);
+        row.appendChild(tracking);
+        body.appendChild(row);
+
+        if (pkg.labelZplPreview) {
+            const preview = document.createElement("textarea");
+            preview.className = "hh-label-preview";
+            preview.readOnly = true;
+            preview.value = pkg.labelZplPreview;
+            body.appendChild(preview);
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "hh-label-meta";
+        meta.textContent = `Format: ${pkg.labelFormat || "ZPL"}`;
+        body.appendChild(meta);
 
         const btn = document.createElement("button");
-        btn.className = "btn btn-secondary";
-        btn.style.margin = "0";
+        btn.className = "hh-btn hh-btn-ghost hh-btn-block";
         btn.textContent = "Download ZPL";
-        // We need shipmentId. logic check: setPackages returns shipmentId.
-        // Let's store shipmentId in state.
+        if (!state.shipmentId || !packageId) {
+            btn.disabled = true;
+        } else {
+            btn.addEventListener("click", () => {
+                const url = `${getApiBaseUrl()}/api/shipments/${state.shipmentId}/packages/${packageId}/label.zpl`;
+                window.open(url, "_blank");
+            });
+        }
 
-        btn.onclick = () => {
-            // We don't have shipmentId in state easy access from setPackages response unless we saved it.
-            // But we can construct url if we have package ID alone? No, endpoint is /shipments/{id}/packages/{pkgId}...
-            // Wait, LabelService generates ZPL. Endpoints need shipment ID.
-            // Let's assumes we saved it.
-            alert("ZPL Content:\n" + (pkg.labelZplPreview || "Encoded content"));
-        };
-
-        div.appendChild(btn);
-        list.appendChild(div);
+        body.appendChild(btn);
+        card.appendChild(body);
+        list.appendChild(card);
     });
 }
 
 document.getElementById("btnNextTote").addEventListener("click", () => {
     state.sessionId = null;
+    state.shipmentId = null;
     state.lines = [];
     state.toteInfo = {};
     state.packages = [];

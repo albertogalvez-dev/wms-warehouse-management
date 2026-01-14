@@ -17,8 +17,14 @@ public class Product {
     @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(length = 2000)
+    private String description;
+
     @Column(unique = true, length = 100)
     private String barcode;
+
+    @Column(name = "image_url", length = 512)
+    private String imageUrl;
 
     @Column(nullable = false)
     private Boolean active = true;
@@ -71,6 +77,22 @@ public class Product {
 
     public void setBarcode(String barcode) {
         this.barcode = barcode;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Boolean getActive() {

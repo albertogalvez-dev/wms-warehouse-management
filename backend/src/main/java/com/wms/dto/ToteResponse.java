@@ -17,6 +17,7 @@ public class ToteResponse {
     private Long packingStationId;
     private String packingStationCode;
     private PickingSummary pickingSummary;
+    private java.util.List<ToteLine> lines;
 
     public static class PickingSummary {
         private int totalAssigned;
@@ -36,10 +37,59 @@ public class ToteResponse {
         }
     }
 
+    public static class ToteLine {
+        private Long productId;
+        private String sku;
+        private String productName;
+        private String imageUrl;
+        private String locationCode;
+        private Integer assignedQty;
+        private Integer pickedQty;
+
+        public ToteLine(Long productId, String sku, String productName, String imageUrl,
+                String locationCode, Integer assignedQty, Integer pickedQty) {
+            this.productId = productId;
+            this.sku = sku;
+            this.productName = productName;
+            this.imageUrl = imageUrl;
+            this.locationCode = locationCode;
+            this.assignedQty = assignedQty;
+            this.pickedQty = pickedQty;
+        }
+
+        public Long getProductId() {
+            return productId;
+        }
+
+        public String getSku() {
+            return sku;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+
+        public String getLocationCode() {
+            return locationCode;
+        }
+
+        public Integer getAssignedQty() {
+            return assignedQty;
+        }
+
+        public Integer getPickedQty() {
+            return pickedQty;
+        }
+    }
+
     public ToteResponse() {
     }
 
-    public static ToteResponse fromEntity(Tote tote, int totalAssigned, int totalPicked) {
+    public static ToteResponse fromEntity(Tote tote, int totalAssigned, int totalPicked, java.util.List<ToteLine> lines) {
         ToteResponse dto = new ToteResponse();
         dto.setId(tote.getId());
         dto.setBarcode(tote.getBarcode());
@@ -58,6 +108,7 @@ public class ToteResponse {
             dto.setPackingStationCode(tote.getPackingStation().getCode());
         }
         dto.setPickingSummary(new PickingSummary(totalAssigned, totalPicked));
+        dto.setLines(lines);
         return dto;
     }
 
@@ -164,5 +215,13 @@ public class ToteResponse {
 
     public void setPickingSummary(PickingSummary pickingSummary) {
         this.pickingSummary = pickingSummary;
+    }
+
+    public java.util.List<ToteLine> getLines() {
+        return lines;
+    }
+
+    public void setLines(java.util.List<ToteLine> lines) {
+        this.lines = lines;
     }
 }

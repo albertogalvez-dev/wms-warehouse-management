@@ -21,6 +21,9 @@ public class PickTask {
     @Column(nullable = false, length = 20)
     private PickTaskStatus status = PickTaskStatus.OPEN;
 
+    @Column(length = 100)
+    private String operator;
+
     @OneToMany(mappedBy = "pickTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")
     private List<PickLine> lines = new ArrayList<>();
@@ -70,6 +73,14 @@ public class PickTask {
 
     public void setStatus(PickTaskStatus status) {
         this.status = status;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
+
+    public void setOperator(String operator) {
+        this.operator = operator;
     }
 
     public List<PickLine> getLines() {

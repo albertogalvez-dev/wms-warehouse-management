@@ -7,6 +7,11 @@ public class OrderLineResponse {
     private Long productId;
     private String sku;
     private String productName;
+    private String imageUrl;
+    private String locationCode;
+    private Integer stockOnHand;
+    private Integer stockAllocated;
+    private Integer stockAvailable;
     private Integer requestedQty;
     private Integer allocatedQty;
     private Integer pickedQty;
@@ -20,9 +25,25 @@ public class OrderLineResponse {
         dto.setProductId(line.getProduct().getId());
         dto.setSku(line.getProduct().getSku());
         dto.setProductName(line.getProduct().getName());
+        dto.setImageUrl(line.getProduct().getImageUrl());
         dto.setRequestedQty(line.getRequestedQty());
         dto.setAllocatedQty(line.getAllocatedQty());
         dto.setPickedQty(line.getPickedQty());
+        return dto;
+    }
+
+    public static OrderLineResponse fromEntity(OrderLine line, ProductInventorySummary inventory) {
+        OrderLineResponse dto = fromEntity(line);
+        if (inventory != null) {
+            dto.setLocationCode(inventory.getLocationCode());
+            dto.setStockOnHand(inventory.getStockOnHand());
+            dto.setStockAllocated(inventory.getStockAllocated());
+            dto.setStockAvailable(inventory.getStockAvailable());
+        } else {
+            dto.setStockOnHand(0);
+            dto.setStockAllocated(0);
+            dto.setStockAvailable(0);
+        }
         return dto;
     }
 
@@ -57,6 +78,46 @@ public class OrderLineResponse {
 
     public void setProductName(String productName) {
         this.productName = productName;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getLocationCode() {
+        return locationCode;
+    }
+
+    public void setLocationCode(String locationCode) {
+        this.locationCode = locationCode;
+    }
+
+    public Integer getStockOnHand() {
+        return stockOnHand;
+    }
+
+    public void setStockOnHand(Integer stockOnHand) {
+        this.stockOnHand = stockOnHand;
+    }
+
+    public Integer getStockAllocated() {
+        return stockAllocated;
+    }
+
+    public void setStockAllocated(Integer stockAllocated) {
+        this.stockAllocated = stockAllocated;
+    }
+
+    public Integer getStockAvailable() {
+        return stockAvailable;
+    }
+
+    public void setStockAvailable(Integer stockAvailable) {
+        this.stockAvailable = stockAvailable;
     }
 
     public Integer getRequestedQty() {

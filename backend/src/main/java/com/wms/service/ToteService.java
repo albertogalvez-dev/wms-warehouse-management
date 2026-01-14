@@ -11,6 +11,9 @@ import com.wms.repository.ToteRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+
 @Service
 @Transactional
 public class ToteService {
@@ -35,17 +38,31 @@ public class ToteService {
         // Calculate picking summary from PickTask lines
         int totalAssigned = 0;
         int totalPicked = 0;
+        var lines = new ArrayList<ToteResponse.ToteLine>();
 
-        var pickTask = pickTaskRepository.findByOrderId(tote.getOrder().getId());
+        var pickTask = pickTaskRepository.findByOrderId(tote.getOrder().getId())
+                .flatMap(task -> pickTaskRepository.findByIdWithDetails(task.getId()));
         if (pickTask.isPresent()) {
             var task = pickTask.get();
             for (var line : task.getLines()) {
                 totalAssigned += line.getAssignedQty();
                 totalPicked += line.getPickedQty();
+                lines.add(new ToteResponse.ToteLine(
+                        line.getProduct().getId(),
+                        line.getProduct().getSku(),
+                        line.getProduct().getName(),
+                        line.getProduct().getImageUrl(),
+                        line.getLocation().getCode(),
+                        line.getAssignedQty(),
+                        line.getPickedQty()));
             }
         }
 
-        return ToteResponse.fromEntity(tote, totalAssigned, totalPicked);
+        lines.sort(Comparator
+                .comparing(ToteResponse.ToteLine::getLocationCode, Comparator.nullsLast(String::compareTo))
+                .thenComparing(ToteResponse.ToteLine::getSku, Comparator.nullsLast(String::compareTo)));
+
+        return ToteResponse.fromEntity(tote, totalAssigned, totalPicked, lines);
     }
 
     public ToteResponse assignStation(String barcode, AssignStationRequest request) {

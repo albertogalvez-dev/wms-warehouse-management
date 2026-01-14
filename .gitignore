@@ -57,3 +57,16 @@ out/
 *.bak
 *.backup
 .cache/
+
+# === Playwright ===
+test-results/
+playwright-report/
+playwright/.cache/
+
+# === Backend logs (cleanup) ===
+error.log
+error2.log
+maven_log.txt
+
+# === Screenshots (track this folder) ===
+# @fotos/ is tracked - contains documentation screenshots

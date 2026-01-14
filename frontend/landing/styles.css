@@ -2,6 +2,15 @@
    WMS Landing Page Styles
    ============================================ */
 
+html {
+    scroll-padding-top: 80px;
+}
+
+body {
+    padding-top: 64px;
+    overflow-x: hidden;
+}
+
 /* ========== TOPBAR ========== */
 .topbar {
     position: fixed;
@@ -26,6 +35,12 @@
     align-items: center;
     gap: 10px;
     text-decoration: none;
+}
+
+.logo-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
 }
 
 .logo-text {
@@ -63,7 +78,7 @@
 
 /* ========== HERO ========== */
 .hero {
-    padding: 140px 0 80px;
+    padding: 96px 0 80px;
     background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
 }
 
@@ -86,6 +101,20 @@
     color: var(--text-2);
     margin: 0 0 var(--space-xl);
     line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .hero {
+        padding: 72px 0 64px;
+    }
+
+    .hero-title {
+        font-size: 2.25rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.05rem;
+    }
 }
 
 .hero-cta {
@@ -397,6 +426,11 @@
 .footer-brand .logo-text {
     color: var(--text-inverse);
     font-size: 1.75rem;
+}
+
+.footer-brand .logo-img {
+    width: 36px;
+    height: 36px;
 }
 
 .footer-brand p {

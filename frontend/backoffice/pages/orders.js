@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from "../api.js";
-import { qs, qsa, badgeForOrderStatus, formatDateTime } from "../utils.js";
+import { qs, qsa, badgeForOrderStatus, formatDateTime, escapeHtml } from "../utils.js";
 
 export async function renderOrdersList({ root, query }) {
   const page = Number.parseInt(query.page || "0", 10) || 0;
@@ -53,8 +53,8 @@ export async function renderOrdersList({ root, query }) {
         <div class="split mt-md">
           <div class="text-muted" id="ordersMeta"></div>
           <div class="row" style="gap: var(--space-sm)">
-            <button class="btn btn-outline btn-sm" id="ordersPrev">← Prev</button>
-            <button class="btn btn-outline btn-sm" id="ordersNext">Next →</button>
+            <button class="btn btn-outline btn-sm" id="ordersPrev">Prev</button>
+            <button class="btn btn-outline btn-sm" id="ordersNext">Next</button>
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export async function renderOrdersList({ root, query }) {
       </table>
     `;
 
-    metaHost.textContent = `Page ${data.number + 1} / ${data.totalPages} — ${data.totalElements} orders`;
+    metaHost.textContent = `Page ${data.number + 1} / ${data.totalPages} - ${data.totalElements} orders`;
 
     qs("#ordersPrev", root).disabled = data.first;
     qs("#ordersNext", root).disabled = data.last;
@@ -136,37 +136,66 @@ export async function renderOrderCreate({ root, ui }) {
   }
 
   const linesState = [];
+  const productState = {
+    items: [],
+    total: 0,
+    query: "",
+    pageSize: 200,
+  };
+
+  function getStockAvailable(product) {
+    const onHand = Number(product.stockOnHand || 0);
+    const allocated = Number(product.stockAllocated || 0);
+    const available = Number(product.stockAvailable ?? (onHand - allocated));
+    return Math.max(0, available);
+  }
 
   function renderLines() {
     const host = qs("#linesHost", root);
+    if (!host) return;
+
+    const rows = linesState.map((l) => {
+      const imageUrl = l.imageUrl ? encodeURI(l.imageUrl).replace(/'/g, "%27") : "";
+      const available = Number(l.stockAvailable || 0);
+      return `
+        <tr>
+          <td>
+            <div class="row row--start">
+              <div class="product-thumb" style="${imageUrl ? `background-image:url('${imageUrl}')` : ""}">
+                ${imageUrl ? "" : `<span>${escapeHtml(l.name?.slice(0, 1) || "P")}</span>`}
+              </div>
+              <div>
+                <div class="product-name">${escapeHtml(l.name)}</div>
+                <div class="product-meta">
+                  <span class="font-mono">${escapeHtml(l.sku)}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="font-mono">${escapeHtml(l.locationCode || "-")}</td>
+          <td class="font-mono">${available}</td>
+          <td>
+            <input class="input qty-input" type="number" min="1" max="${available}" value="${l.requestedQty}" data-line-qty="${l.productId}" />
+          </td>
+          <td><button class="btn btn-danger btn-sm" data-line-remove="${l.productId}">Remove</button></td>
+        </tr>
+      `;
+    });
+
     host.innerHTML = `
       <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Name</th>
+              <th>Product</th>
+              <th>Location</th>
+              <th>Available</th>
               <th style="width:120px">Qty</th>
               <th style="width:80px"></th>
             </tr>
           </thead>
           <tbody>
-            ${linesState.length
-        ? linesState
-          .map(
-            (l) => `
-                        <tr>
-                          <td class="font-mono">${l.sku}</td>
-                          <td>${l.name}</td>
-                          <td>
-                            <input class="input" type="number" min="1" value="${l.requestedQty}" data-line-qty="${l.productId}" style="width:80px" />
-                          </td>
-                          <td><button class="btn btn-danger btn-sm" data-line-remove="${l.productId}">✕</button></td>
-                        </tr>`
-          )
-          .join("")
-        : `<tr><td colspan="4" class="text-muted text-center">Add at least one product line</td></tr>`
-      }
+            ${rows.join("") || `<tr><td colspan="5" class="text-muted text-center">Add at least one product line</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -177,7 +206,13 @@ export async function renderOrderCreate({ root, ui }) {
         const id = Number(input.getAttribute("data-line-qty"));
         const line = linesState.find((x) => x.productId === id);
         if (!line) return;
-        const value = Math.max(1, Number.parseInt(input.value || "1", 10) || 1);
+        const max = Number(line.stockAvailable || 0);
+        let value = Number.parseInt(input.value || "1", 10) || 1;
+        value = Math.max(1, value);
+        if (max > 0 && value > max) {
+          value = max;
+          ui.toastError("Stock limit", `${line.sku} available: ${max}`);
+        }
         line.requestedQty = value;
         input.value = String(value);
       });
@@ -193,15 +228,39 @@ export async function renderOrderCreate({ root, ui }) {
     });
   }
 
-  function addLine(product) {
+  function addLine(product, qty) {
+    const available = getStockAvailable(product);
+    if (available <= 0) {
+      ui.toastError("Out of stock", `${product.sku} has 0 available`);
+      return;
+    }
+
     const existing = linesState.find((l) => l.productId === product.id);
+    const safeQty = Math.max(1, qty || 1);
     if (existing) {
-      existing.requestedQty += 1;
-      ui.toastOk("Line updated", `${existing.sku} qty = ${existing.requestedQty}`);
+      const nextQty = existing.requestedQty + safeQty;
+      if (nextQty > available) {
+        existing.requestedQty = available;
+        ui.toastError("Stock limit", `${product.sku} available: ${available}`);
+      } else {
+        existing.requestedQty = nextQty;
+        ui.toastOk("Line updated", `${existing.sku} qty = ${existing.requestedQty}`);
+      }
       renderLines();
       return;
     }
-    linesState.push({ productId: product.id, sku: product.sku, name: product.name, requestedQty: 1 });
+
+    linesState.push({
+      productId: product.id,
+      sku: product.sku,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      locationCode: product.locationCode,
+      stockOnHand: product.stockOnHand,
+      stockAllocated: product.stockAllocated,
+      stockAvailable: available,
+      requestedQty: Math.min(safeQty, available),
+    });
     renderLines();
   }
 
@@ -213,7 +272,7 @@ export async function renderOrderCreate({ root, ui }) {
             <h3 class="card-title">Create Order</h3>
             <p class="card-subtitle">Shipping + carrier + product lines.</p>
           </div>
-          <a class="btn btn-ghost btn-sm" href="#/orders">← Back to list</a>
+          <a class="btn btn-ghost btn-sm" href="#/orders">Back to list</a>
         </div>
         <div class="card-body">
           <div class="form-section">
@@ -297,9 +356,14 @@ export async function renderOrderCreate({ root, ui }) {
             <label class="label">Search products</label>
             <input id="productQuery" class="input" placeholder="Search by SKU, name, or barcode..." />
           </div>
-          <div id="productResults" class="stack-sm mb-lg"></div>
-          
+          <div class="split mb-sm">
+            <div id="productMeta" class="text-muted small"></div>
+            <button class="btn btn-outline btn-sm" id="btnReloadProducts">Refresh</button>
+          </div>
+          <div id="productCatalog" class="table-wrap"></div>
+
           <div class="divider"></div>
+          <h4 class="font-medium mb-md">Selected Lines</h4>
           <div id="linesHost"></div>
         </div>
       </div>
@@ -308,46 +372,121 @@ export async function renderOrderCreate({ root, ui }) {
 
   renderLines();
 
+  function renderCatalog() {
+    const host = qs("#productCatalog", root);
+    if (!host) return;
+
+    const query = productState.query.toLowerCase();
+    const filtered = (productState.items || []).filter((p) => {
+      if (!query) return true;
+      const haystack = [p.sku, p.name, p.barcode].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+
+    const rows = filtered.map((p) => {
+      const imageUrl = p.imageUrl ? encodeURI(p.imageUrl).replace(/'/g, "%27") : "";
+      const available = getStockAvailable(p);
+      const qtyValue = Number(qs(`[data-catalog-qty="${p.id}"]`, root)?.value || 1);
+      const qty = Number.isNaN(qtyValue) ? 1 : qtyValue;
+      return `
+        <tr>
+          <td>
+            <div class="product-thumb product-thumb-sm" style="${imageUrl ? `background-image:url('${imageUrl}')` : ""}">
+              ${imageUrl ? "" : `<span>${escapeHtml(p.name?.slice(0, 1) || "P")}</span>`}
+            </div>
+          </td>
+          <td class="font-mono">${escapeHtml(p.sku)}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td class="font-mono">${escapeHtml(p.locationCode || "-")}</td>
+          <td class="font-mono">${available}</td>
+          <td>
+            <input class="input qty-input" type="number" min="1" max="${available}" value="${qty}" data-catalog-qty="${p.id}" ${available <= 0 ? "disabled" : ""} />
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" data-add-product="${p.id}" ${available <= 0 ? "disabled" : ""}>Add</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    host.innerHTML = `
+      <table class="table table-compact">
+        <thead>
+          <tr>
+            <th>Photo</th>
+            <th>SKU</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Available</th>
+            <th style="width:120px">Qty</th>
+            <th style="width:80px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join("") || `<tr><td colspan="7" class="text-muted text-center">No products found</td></tr>`}
+        </tbody>
+      </table>
+    `;
+
+    qsa("[data-catalog-qty]", root).forEach((input) => {
+      input.addEventListener("change", () => {
+        const id = Number(input.getAttribute("data-catalog-qty"));
+        const product = productState.items.find((x) => x.id === id);
+        if (!product) return;
+        const max = getStockAvailable(product);
+        let value = Number.parseInt(input.value || "1", 10) || 1;
+        value = Math.max(1, value);
+        if (max > 0 && value > max) {
+          value = max;
+          ui.toastError("Stock limit", `${product.sku} available: ${max}`);
+        }
+        input.value = String(value);
+      });
+    });
+
+    qsa("[data-add-product]", root).forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-add-product"));
+        const product = productState.items.find((x) => x.id === id);
+        if (!product) return;
+        const qtyInput = qs(`[data-catalog-qty="${id}"]`, root);
+        const qty = Number.parseInt(qtyInput?.value || "1", 10) || 1;
+        addLine(product, qty);
+      });
+    });
+  }
+
+  async function loadProducts() {
+    const meta = qs("#productMeta", root);
+    if (meta) meta.textContent = "Loading products...";
+    try {
+      const data = await apiGet(`/api/products?query=&page=0&size=${productState.pageSize}`);
+      productState.items = data.content || [];
+      productState.total = data.totalElements || productState.items.length;
+      renderCatalog();
+      if (meta) {
+        const shown = productState.items.length;
+        meta.textContent = productState.total > shown
+          ? `Showing ${shown} of ${productState.total} products (use search to filter)`
+          : `Showing ${shown} products`;
+      }
+    } catch (e) {
+      if (meta) meta.textContent = `Error: ${e.message}`;
+      qs("#productCatalog", root).innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    }
+  }
+
   let searchTimer = null;
   qs("#productQuery", root).addEventListener("input", () => {
-    const q = qs("#productQuery", root).value.trim();
     if (searchTimer) clearTimeout(searchTimer);
-    searchTimer = setTimeout(async () => {
-      if (!q) {
-        qs("#productResults", root).innerHTML = "";
-        return;
-      }
-      try {
-        const data = await apiGet(`/api/products?query=${encodeURIComponent(q)}&page=0&size=10`);
-        const products = data.content || [];
-        qs("#productResults", root).innerHTML = products
-          .map(
-            (p) => `
-              <div class="card" style="padding: var(--space-md); background: var(--bg-soft); border: none;">
-                <div class="split">
-                  <div>
-                    <div class="font-bold font-mono">${p.sku}</div>
-                    <div class="text-muted" style="font-size: 0.875rem">${p.name}</div>
-                    <div class="text-muted font-mono" style="font-size: 0.75rem">${p.barcode || ""}</div>
-                  </div>
-                  <button class="btn btn-primary btn-sm" data-add-product="${p.id}">+ Add</button>
-                </div>
-              </div>`
-          )
-          .join("");
-
-        qsa("[data-add-product]", root).forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const id = Number(btn.getAttribute("data-add-product"));
-            const product = products.find((x) => x.id === id);
-            if (product) addLine(product);
-          });
-        });
-      } catch (e) {
-        qs("#productResults", root).innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
-      }
-    }, 250);
+    searchTimer = setTimeout(() => {
+      productState.query = qs("#productQuery", root).value.trim();
+      renderCatalog();
+    }, 200);
   });
+
+  qs("#btnReloadProducts", root).addEventListener("click", loadProducts);
+  await loadProducts();
 
   qs("#btnCreateOrder", root).addEventListener("click", async () => {
     const shipping = {
@@ -408,7 +547,7 @@ export async function renderOrderDetail({ root, ui, params }) {
             <p class="card-subtitle">Ref: <span class="font-mono">${order.externalRef || "(none)"}</span></p>
           </div>
           <div class="row" style="gap: var(--space-sm)">
-            <a class="btn btn-ghost btn-sm" href="#/orders">← Back</a>
+            <a class="btn btn-ghost btn-sm" href="#/orders">Back</a>
             <button class="btn btn-outline btn-sm" id="btnCopyId">Copy ID</button>
             <button class="btn btn-primary" id="btnRelease" ${order.status === "DRAFT" ? "" : "disabled"}>Release to Picking</button>
           </div>
@@ -448,8 +587,9 @@ export async function renderOrderDetail({ root, ui, params }) {
             <table class="table">
               <thead>
                 <tr>
-                  <th>SKU</th>
-                  <th>Name</th>
+                  <th>Product</th>
+                  <th>Location</th>
+                  <th>Stock</th>
                   <th>Requested</th>
                   <th>Allocated</th>
                   <th>Picked</th>
@@ -457,18 +597,41 @@ export async function renderOrderDetail({ root, ui, params }) {
               </thead>
               <tbody>
                 ${(order.lines || [])
-        .map(
-          (l) => `
+        .map((l) => {
+          const imageUrl = l.imageUrl ? encodeURI(l.imageUrl).replace(/'/g, "%27") : "";
+          const location = l.locationCode || "-";
+          const stockOnHand = Number(l.stockOnHand || 0);
+          const stockAllocated = Number(l.stockAllocated || 0);
+          const stockAvailable = Number(l.stockAvailable ?? (stockOnHand - stockAllocated));
+          return `
                         <tr>
-                          <td class="font-mono">${l.productSku}</td>
-                          <td>${l.productName}</td>
+                          <td>
+                            <div class="row row--start">
+                              <div class="product-thumb" style="${imageUrl ? `background-image:url('${imageUrl}')` : ""}">
+                                ${imageUrl ? "" : `<span>${escapeHtml(l.productName?.slice(0, 1) || "P")}</span>`}
+                              </div>
+                              <div>
+                                <div class="product-name">${escapeHtml(l.productName || "")}</div>
+                                <div class="product-meta">
+                                  <span class="font-mono">${escapeHtml(l.sku || "-")}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="font-mono">${escapeHtml(location)}</td>
+                          <td>
+                            <div class="stock-stack">
+                              <div><span class="text-muted">Available</span> <strong>${stockAvailable}</strong></div>
+                              <div class="text-muted small">On hand ${stockOnHand} - Alloc ${stockAllocated}</div>
+                            </div>
+                          </td>
                           <td class="font-mono">${l.requestedQty}</td>
                           <td class="font-mono">${l.allocatedQty}</td>
                           <td class="font-mono">${l.pickedQty}</td>
                         </tr>
-                      `
-        )
-        .join("") || `<tr><td colspan="5" class="text-muted">No lines</td></tr>`
+                      `;
+        })
+        .join("") || `<tr><td colspan="6" class="text-muted">No lines</td></tr>`
       }
               </tbody>
             </table>

@@ -18,9 +18,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByExternalRef(String externalRef);
 
+    interface StatusCountRow {
+        OrderStatus getStatus();
+
+        Long getCount();
+    }
+
     @Query("SELECT o FROM Order o WHERE (:status IS NULL OR o.status = :status)")
     Page<Order> findByStatusFilter(@Param("status") OrderStatus status, Pageable pageable);
 
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.lines WHERE o.id = :id")
     Optional<Order> findByIdWithLines(@Param("id") Long id);
+
+    @Query("SELECT o.status as status, COUNT(o) as count FROM Order o GROUP BY o.status")
+    java.util.List<StatusCountRow> countByStatus();
+
+    long countByCreatedAtBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
 }

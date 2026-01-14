@@ -1,6 +1,7 @@
 package com.wms.dto;
 
 import com.wms.entity.Shipment;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,21 +51,27 @@ public class ShipmentResponse {
 
     private Long id;
     private Long orderId;
+    private String externalRef;
     private String carrier;
     private String status;
     private List<PackageInfo> packages;
     private String printError;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static ShipmentResponse fromEntity(Shipment shipment) {
         ShipmentResponse dto = new ShipmentResponse();
         dto.setId(shipment.getId());
         dto.setOrderId(shipment.getOrder().getId());
+        dto.setExternalRef(shipment.getOrder().getExternalRef());
         dto.setCarrier(shipment.getCarrier());
         dto.setStatus(shipment.getStatus().name());
         dto.setPackages(shipment.getPackages().stream()
                 .map(PackageInfo::new)
                 .collect(Collectors.toList()));
         dto.setPrintError(shipment.getPrintError());
+        dto.setCreatedAt(shipment.getCreatedAt());
+        dto.setUpdatedAt(shipment.getUpdatedAt());
         return dto;
     }
 
@@ -83,6 +90,14 @@ public class ShipmentResponse {
 
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
+    }
+
+    public String getExternalRef() {
+        return externalRef;
+    }
+
+    public void setExternalRef(String externalRef) {
+        this.externalRef = externalRef;
     }
 
     public String getCarrier() {
@@ -115,5 +130,21 @@ public class ShipmentResponse {
 
     public void setPrintError(String printError) {
         this.printError = printError;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

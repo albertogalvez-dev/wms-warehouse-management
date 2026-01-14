@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "./config.js";
+import { getToken } from "../shared/auth.js";
 
 export class ApiError extends Error {
   constructor(message, { status = 0, details = null } = {}) {
@@ -27,12 +28,14 @@ async function parseErrorResponse(response) {
 
 async function request(method, path, { body = null, headers = {}, accept = "application/json" } = {}) {
   const url = buildUrl(path);
+  const token = getToken();
   try {
     const res = await fetch(url, {
       method,
       headers: {
         Accept: accept,
         ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         ...headers,
       },
       body: body ? JSON.stringify(body) : null,

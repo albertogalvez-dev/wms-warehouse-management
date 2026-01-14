@@ -1,6 +1,7 @@
 package com.wms.config;
 
 import com.wms.security.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Security configuration with JWT authentication.
@@ -28,6 +30,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+
+    @Value("${cors.allowed-origins:*}")
+    private String corsAllowedOrigins;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -82,8 +87,14 @@ public class SecurityConfig {
                         // Totes - PICKER, PACKER or higher
                         .requestMatchers("/api/totes/**").hasAnyRole("ADMIN", "MANAGER", "PICKER", "PACKER")
 
+                        // Users - ADMIN only
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+
                         // Meta endpoints - authenticated
                         .requestMatchers("/api/meta/**").authenticated()
+
+                        // Stats endpoints - authenticated
+                        .requestMatchers(HttpMethod.GET, "/api/stats/**").authenticated()
 
                         // All other requests require authentication
                         .anyRequest().authenticated())
@@ -95,7 +106,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("*"));
+        List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        if (origins.isEmpty() || origins.contains("*")) {
+            config.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            config.setAllowedOrigins(origins);
+        }
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

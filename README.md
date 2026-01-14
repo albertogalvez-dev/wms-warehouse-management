@@ -1,7 +1,31 @@
 # WMS - Warehouse Management System
 
-A complete Warehouse Management System built with **Java 17 + Spring Boot 3 + PostgreSQL**.  
-Designed as a production-ready portfolio project demonstrating real warehouse operations.
+A production-ready **Warehouse Management System** built with Java 17, Spring Boot 3, and PostgreSQL. Features a complete order-to-shipment workflow with web backoffice, mobile handheld interface, and ZPL label printing.
+
+![Dashboard](@fotos/desktop/dashboard.png)
+
+## ✨ Features
+
+- **Order Management** — Create, track, and manage customer orders through the complete lifecycle
+- **Wave Picking** — Organize picks into waves for efficient warehouse operations
+- **Handheld Packing** — Mobile-optimized interface for scanning and packing operations
+- **Tote Tracking** — Real-time tote status and location management
+- **Shipment & Labels** — Automatic ZPL label generation with carrier integration
+- **User Management** — Role-based access control (Admin, Manager, Picker, Packer)
+- **RESTful API** — Full Swagger/OpenAPI documentation
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Java 17, Spring Boot 3.2, Spring Security, Spring Data JPA |
+| **Database** | PostgreSQL 16, Flyway migrations |
+| **Auth** | JWT tokens with role-based access |
+| **Frontend** | Vanilla HTML/CSS/JavaScript (no framework) |
+| **Deploy** | Docker Compose, Nginx reverse proxy |
+| **Docs** | Swagger UI (OpenAPI 3) |
+
+## 📐 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -17,161 +41,139 @@ Designed as a production-ready portfolio project demonstrating real warehouse op
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## 📦 Order Flow
+### Order Flow
 
 ```
   ┌─────────┐     ┌──────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
   │  DRAFT  │────▶│ RELEASED │────▶│ PICKING │────▶│ PACKING │────▶│ SHIPPED │
   └─────────┘     └──────────┘     └─────────┘     └─────────┘     └─────────┘
-       │               │                │               │               │
-       ▼               ▼                ▼               ▼               ▼
-   Create order   Allocate stock   Wave picking    Scan & pack    Print labels
-   Add lines      → RELEASED       Zebra device    Validate qty   Ship to carrier
 ```
 
-## ⚡ Quick Start
+## 📋 Requirements
 
-### Prerequisites
-- **Java 17** or higher
-- **Maven 3.8+**
-- **Docker** and **Docker Compose**
+- **Docker** & **Docker Compose** (recommended)
+- Java 17+ (for local development without Docker)
+- Node.js 18+ (for screenshot automation only)
 
-### Local Development (Docker Compose)
+## 🚀 Quick Start
+
+### 1. Clone & Configure
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/albertogalvez/wms-warehouse-management.git
+git clone https://github.com/albertogalvez-dev/wms-warehouse-management.git
 cd wms-warehouse-management
 
-# 2. Copy environment file
+# Copy environment file
 cp .env.example .env
-
-# 3. Start all services
-docker compose up -d
-
-# 4. Wait for startup (~60s), then open:
 ```
+
+### 2. Start Services
+
+```bash
+docker compose up -d
+```
+
+Wait ~60 seconds for all services to start.
+
+### 3. Access the Application
 
 | Service | URL |
 |---------|-----|
-| 🏠 Backoffice | http://localhost/ |
-| 📱 Handheld | http://localhost/handheld/ |
-| 📖 Swagger API | http://localhost/swagger-ui/index.html |
-| 💚 Health Check | http://localhost/actuator/health |
+| 🏠 Backoffice | http://localhost:8081/backoffice/ |
+| 📱 Handheld | http://localhost:8081/handheld/ |
+| 🌐 Landing | http://localhost:8081/landing/ |
+| 📖 Swagger API | http://localhost:8081/swagger-ui/index.html |
+| 💚 Health Check | http://localhost:8081/actuator/health |
 
-### Manual Backend (without Docker)
+### Default Credentials
 
-```bash
-# Start PostgreSQL
-cd docker && docker compose up -d
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `admin123` | ADMIN |
 
-# Run backend
-cd backend
-mvn spring-boot:run
-```
-
-## 🔐 Authentication
-
-JWT-based authentication with role-based access control.
-
-### Default Admin
-- **Username:** `admin`
-- **Password:** `admin123`
-
-### Login Example
-```bash
-curl -X POST http://localhost:8080/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-```
-
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "username": "admin",
-  "role": "ADMIN",
-  "expiresIn": 86400000
-}
-```
-
-### Roles
-
-| Role | Permissions |
-|------|-------------|
-| `ADMIN` | Full access to all operations |
-| `MANAGER` | Manage products, locations, orders, waves |
-| `PICKER` | Picking operations only |
-| `PACKER` | Packing operations only |
-
-## 🔧 Environment Variables
+## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SPRING_PROFILES_ACTIVE` | Active profile (dev/prod) | `dev` |
-| `DB_HOST` | PostgreSQL host | `127.0.0.1` |
-| `DB_PORT` | PostgreSQL port | `5433` |
 | `DB_NAME` | Database name | `wms` |
 | `DB_USER` | Database user | `wms` |
 | `DB_PASS` | Database password | `wms` |
-| `JWT_SECRET` | JWT signing key (256-bit) | dev default |
+| `JWT_SECRET` | JWT signing key (32+ chars) | dev default |
 | `JWT_EXPIRATION_MS` | Token expiration (ms) | `86400000` |
-| `PRINTER_ENABLED` | Enable Zebra printing | `false` |
-| `PRINTER_HOST` | Zebra printer IP | - |
+| `WMS_HTTP_PORT` | Nginx port binding | `8081` |
+| `SPRING_PROFILES_ACTIVE` | Profile (dev/prod) | `dev` |
 
-## 📡 API Endpoints
+## 📜 Available Scripts
 
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/login` | Login, returns JWT |
-| POST | `/auth/register` | Register user (Admin) |
-| GET | `/auth/me` | Current user info |
+### Docker
 
-### Products
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/products` | List products (paginated) |
-| GET | `/api/products/{id}` | Get product by ID |
-| POST | `/api/products` | Create product |
-| PUT | `/api/products/{id}` | Update product |
+```bash
+# Start all services
+docker compose up -d
 
-### Orders
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/orders` | List orders |
-| POST | `/api/orders` | Create order |
-| POST | `/api/orders/{id}/release` | Release to picking |
-| GET | `/api/orders/{id}` | Get order details |
+# View logs
+docker compose logs -f backend
 
-### Waves
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/waves` | List waves |
-| POST | `/api/waves` | Create wave |
-| GET | `/api/waves/{id}/picklist` | Get pick list |
+# Stop services
+docker compose down
+```
 
-### Picking (Handheld)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/picking/tasks/{waveId}` | Get pick tasks |
-| POST | `/api/picking/complete` | Complete pick |
+### Screenshots
 
-### Packing
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/packing/start` | Start packing session |
-| POST | `/api/packing/scan` | Scan product |
-| POST | `/api/packing/set-packages` | Set package count |
-| POST | `/api/packing/complete` | Complete packing |
+```bash
+# Install dependencies (first time only)
+npm install
+npx playwright install chromium
 
-### Shipments
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/shipments/{id}` | Get shipment |
-| GET | `/api/shipments/{id}/labels` | Get ZPL labels |
+# Generate screenshots
+npm run screenshots
+```
 
-## 🏗️ Project Structure
+## 📸 Screenshots
+
+All screenshots are stored in `@fotos/` folder:
+
+| Screenshot | Description |
+|------------|-------------|
+| `@fotos/desktop/dashboard.png` | Main dashboard |
+| `@fotos/desktop/orders.png` | Orders list |
+| `@fotos/desktop/products.png` | Products catalog |
+| `@fotos/desktop/waves.png` | Pick waves |
+| `@fotos/desktop/totes.png` | Tote management |
+| `@fotos/desktop/shipments.png` | Shipments |
+| `@fotos/mobile/handheld-start.png` | Mobile packing |
+
+### Regenerating Screenshots
+
+```bash
+# Ensure Docker services are running
+docker compose up -d
+
+# Set credentials (optional, defaults to admin/admin123)
+export WMS_E2E_USER=admin
+export WMS_E2E_PASS=admin123
+
+# Run screenshot capture
+npm run screenshots
+```
+
+Screenshots will be saved to `@fotos/desktop/` and `@fotos/mobile/` with a manifest at `@fotos/manifest.json`.
+
+## 📡 API Overview
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /auth/login` | Authenticate, returns JWT |
+| `GET /api/products` | List products |
+| `GET /api/orders` | List orders |
+| `POST /api/orders/{id}/release` | Release order to picking |
+| `GET /api/waves` | List pick waves |
+| `POST /api/packing/sessions/start` | Start packing session |
+| `GET /api/shipments/{id}` | Get shipment details |
+
+Full API documentation available at `/swagger-ui/index.html` when running.
+
+## 🗂️ Project Structure
 
 ```
 wms/
@@ -182,7 +184,6 @@ wms/
 │   │   ├── repository/      # JPA repositories
 │   │   ├── entity/          # JPA entities
 │   │   ├── dto/             # Data transfer objects
-│   │   ├── config/          # Configuration
 │   │   ├── security/        # JWT authentication
 │   │   └── exception/       # Error handling
 │   └── src/main/resources/
@@ -191,122 +192,26 @@ wms/
 │   ├── backoffice/          # Admin web app
 │   ├── handheld/            # Mobile packing app
 │   ├── landing/             # Portfolio landing page
-│   └── shared/              # Shared theme & utilities
+│   └── shared/              # Shared theme & auth
+├── scripts/                 # Automation scripts
+│   └── capture-screenshots.ts
+├── @fotos/                  # Generated screenshots
 ├── nginx/                   # Nginx configuration
-├── docker/                  # PostgreSQL setup
-├── docker-compose.yml       # Full stack deployment
-└── .github/workflows/       # CI/CD pipelines
+├── docker-compose.yml       # Development stack
+└── docker-compose.prod.yml  # Production stack
 ```
 
-## 🧪 Testing
+## 🚀 Production Deployment
 
-```bash
-# Run all tests
-cd backend
-mvn test
-
-# Run with coverage
-mvn test jacoco:report
-```
-
-## 🚀 Deploy to Oracle VPS (ARM64/aarch64)
-
-This project is optimized for Oracle Cloud Free Tier with ARM A1.Flex instances.
-
-### Prerequisites on VPS
-
-```bash
-# SSH to your VPS
-ssh opc@YOUR_VPS_IP
-
-# Install Docker (Oracle Linux 9)
-sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-sudo systemctl enable --now docker
-sudo usermod -aG docker opc
-# Log out and log back in for group changes
-```
-
-### Deployment Steps
-
-```bash
-# 1. Clone repository
-git clone https://github.com/albertogalvez/wms-warehouse-management.git
-cd wms-warehouse-management
-
-# 2. Create and configure .env
-cp .env.example .env
-nano .env
-```
-
-### Required .env Configuration for Production
-
-```bash
-# === REQUIRED: Change these values ===
-DB_PASS=your_secure_database_password_here
-JWT_SECRET=your_32_char_secure_random_string_here
-
-# === IMPORTANT: Set your domain or IP ===
-# With domain (auto HTTPS):
-DOMAIN=wms.yourdomain.com
-
-# Without domain (HTTP only, use IP):
-DOMAIN=:80
-
-# === Production profile ===
-SPRING_PROFILES_ACTIVE=prod
-
-# === Optional: CORS for external access ===
-CORS_ALLOWED_ORIGINS=*
-```
-
-### Start Production Services
-
-```bash
-# Build and start with production compose file
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Check logs
-docker compose -f docker-compose.prod.yml logs -f backend
-
-# Verify health
-curl http://localhost/actuator/health
-curl http://localhost/api/ping
-```
-
-### Firewall (Oracle Cloud)
-
-Open these ports in your VCN Security List:
-- **80** (HTTP)
-- **443** (HTTPS, if using domain)
-
-```bash
-# Also in iptables (Oracle Linux)
-sudo firewall-cmd --permanent --add-port=80/tcp
-sudo firewall-cmd --permanent --add-port=443/tcp
-sudo firewall-cmd --reload
-```
-
-### Update Deployment
-
-```bash
-cd wms-warehouse-management
-git pull origin master
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### Files Modified for ARM Compatibility
-
-| File | Change |
-|------|--------|
-| `backend/Dockerfile` | Uses `eclipse-temurin:17-jre-jammy` (Ubuntu) instead of Alpine |
-| `docker-compose.prod.yml` | Includes `SPRING_DATASOURCE_*` environment variables |
-| `.env.example` | Full documentation of all required variables |
+See [docker-compose.prod.yml](docker-compose.prod.yml) for production deployment with:
+- HTTPS via Caddy reverse proxy
+- ARM64 compatible (Oracle Cloud Free Tier)
+- Environment-based configuration
 
 ## 📝 License
 
-MIT License - free to use for educational and commercial purposes.
+MIT License — free to use for educational and commercial purposes.
 
 ---
 
-**Built with ❤️ as a portfolio project.**
+**Built with ❤️ by Alberto Gálvez**

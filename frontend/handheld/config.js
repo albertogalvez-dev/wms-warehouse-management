@@ -1,11 +1,12 @@
 // In production (behind nginx), use empty string for same-origin API calls
 // In development (localhost:8080), use full URL
 function detectDefaultApiUrl() {
-    const host = window.location.hostname;
     const port = window.location.port;
+    const path = window.location.pathname || "";
+    const basePath = path === "/wms" || path.startsWith("/wms/") ? "/wms" : "";
     // If running on port 80/443 or no port, assume production (nginx proxy)
     if (!port || port === "80" || port === "443") {
-        return ""; // Relative path: /api/...
+        return basePath; // Relative path: /api/... or /wms/api/...
     }
     // Development: direct backend access
     return "http://localhost:8080";

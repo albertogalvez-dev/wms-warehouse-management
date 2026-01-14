@@ -5,6 +5,7 @@ import com.wms.entity.Order;
 import com.wms.entity.OrderStatus;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OrderResponse {
@@ -29,6 +30,21 @@ public class OrderResponse {
         dto.setShipping(ShippingAddressDTO.fromEntity(order.getShipping()));
         dto.setLines(order.getLines().stream()
                 .map(OrderLineResponse::fromEntity)
+                .collect(Collectors.toList()));
+        dto.setCreatedAt(order.getCreatedAt());
+        dto.setUpdatedAt(order.getUpdatedAt());
+        return dto;
+    }
+
+    public static OrderResponse fromEntity(Order order, Map<Long, ProductInventorySummary> inventoryMap) {
+        OrderResponse dto = new OrderResponse();
+        dto.setId(order.getId());
+        dto.setExternalRef(order.getExternalRef());
+        dto.setStatus(order.getStatus());
+        dto.setCarrier(order.getCarrier());
+        dto.setShipping(ShippingAddressDTO.fromEntity(order.getShipping()));
+        dto.setLines(order.getLines().stream()
+                .map(line -> OrderLineResponse.fromEntity(line, inventoryMap.get(line.getProduct().getId())))
                 .collect(Collectors.toList()));
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());

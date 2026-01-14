@@ -1,38 +1,40 @@
 import { apiGet, apiPost } from "../api.js";
-import { qs, qsa, badgeForOrderStatus, badgeForToteStatus, badgeForWaveStatus, formatDateTime } from "../utils.js";
+import { qs, qsa, badgeForOrderStatus, badgeForToteStatus, badgeForWaveStatus, formatDateTime, escapeHtml } from "../utils.js";
 
 export async function renderWavesList({ root, ui }) {
   root.innerHTML = `
-    <div class="grid">
+    <div class="grid grid-2">
       <div class="card">
-        <div class="row">
+        <div class="card-header">
           <div>
-            <div class="card__title">Pick Waves</div>
-            <p class="card__subtitle">Batch picking by wave + totes.</p>
+            <h3 class="card-title">Pick Waves</h3>
+            <p class="card-subtitle">Batch picking by wave and totes.</p>
           </div>
           <div class="row row--start">
-            <button class="btn btn--secondary" id="btnRefreshWaves">Refresh</button>
+            <button class="btn btn-outline btn-sm" id="btnRefreshWaves">Refresh</button>
           </div>
         </div>
-        <div class="divider"></div>
-        <div id="wavesTable" class="table-wrap"></div>
+        <div class="card-body">
+          <div id="wavesTable" class="table-wrap"></div>
+        </div>
       </div>
 
       <div class="card">
-        <div class="row">
+        <div class="card-header">
           <div>
-            <div class="card__title">Create Wave</div>
-            <p class="card__subtitle">Select eligible orders (DRAFT/RELEASED/PICKING).</p>
+            <h3 class="card-title">Create Wave</h3>
+            <p class="card-subtitle">Select eligible orders (DRAFT/RELEASED/PICKING).</p>
           </div>
           <div class="row row--start">
-            <button class="btn btn--secondary" id="btnLoadEligible">Load eligible</button>
+            <button class="btn btn-outline btn-sm" id="btnLoadEligible">Load eligible</button>
           </div>
         </div>
-        <div class="divider"></div>
-        <div id="eligibleOrdersHost" class="table-wrap"></div>
-        <div class="row" style="margin-top:12px">
-          <button class="btn btn--primary" id="btnCreateWave" disabled>Create Wave</button>
-          <div class="muted" id="eligibleMeta"></div>
+        <div class="card-body">
+          <div id="eligibleOrdersHost" class="table-wrap"></div>
+          <div class="row mt-md" style="gap: var(--space-sm)">
+            <button class="btn btn-primary" id="btnCreateWave" disabled>Create Wave</button>
+            <div class="text-muted" id="eligibleMeta"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -45,16 +47,16 @@ export async function renderWavesList({ root, ui }) {
       const rows = (data.content || []).map(
         (w) => `
           <tr>
-            <td class="mono">${w.id}</td>
-            <td class="mono">${w.code}</td>
+            <td class="font-mono">${w.id}</td>
+            <td class="font-mono">${w.code}</td>
             <td>${badgeForWaveStatus(w.status)}</td>
-            <td class="mono">${(w.orders || []).length}</td>
+            <td class="font-mono">${(w.orders || []).length}</td>
             <td>${formatDateTime(w.createdAt)}</td>
-            <td><a class="btn btn--secondary btn--sm" href="#/waves/${w.id}">View</a></td>
+            <td><a class="btn btn-outline btn-sm" href="#/waves/${w.id}">View</a></td>
           </tr>`
       );
       host.innerHTML = `
-        <table>
+        <table class="table">
           <thead>
             <tr>
               <th>ID</th>
@@ -65,11 +67,11 @@ export async function renderWavesList({ root, ui }) {
               <th></th>
             </tr>
           </thead>
-          <tbody>${rows.join("") || `<tr><td colspan="6" class="muted">No waves</td></tr>`}</tbody>
+          <tbody>${rows.join("") || `<tr><td colspan="6" class="text-muted">No waves</td></tr>`}</tbody>
         </table>
       `;
     } catch (e) {
-      host.innerHTML = `<div class="muted">Error: ${e.message}</div>`;
+      host.innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
     }
   }
 
@@ -85,8 +87,8 @@ export async function renderWavesList({ root, ui }) {
       (o) => `
         <tr>
           <td><input type="checkbox" data-order-select="${o.id}" ${selected.has(o.id) ? "checked" : ""} /></td>
-          <td class="mono">${o.id}</td>
-          <td class="mono">${o.externalRef || ""}</td>
+          <td class="font-mono">${o.id}</td>
+          <td class="font-mono">${o.externalRef || ""}</td>
           <td>${badgeForOrderStatus(o.status)}</td>
           <td>${o.carrier || ""}</td>
           <td>${o.shipping?.city || ""}</td>
@@ -94,7 +96,7 @@ export async function renderWavesList({ root, ui }) {
     );
 
     host.innerHTML = `
-      <table style="min-width:820px">
+      <table class="table table-wide">
         <thead>
           <tr>
             <th></th>
@@ -105,7 +107,7 @@ export async function renderWavesList({ root, ui }) {
             <th>City</th>
           </tr>
         </thead>
-        <tbody>${rows.join("") || `<tr><td colspan="6" class="muted">No eligible orders</td></tr>`}</tbody>
+        <tbody>${rows.join("") || `<tr><td colspan="6" class="text-muted">No eligible orders</td></tr>`}</tbody>
       </table>
     `;
 
@@ -159,7 +161,7 @@ export async function renderWavesList({ root, ui }) {
 
 export async function renderWaveDetail({ root, ui, params }) {
   const id = params.id;
-  root.innerHTML = `<div class="card"><div class="card__title">Loading</div></div>`;
+  root.innerHTML = `<div class="card"><div class="card-body"><div class="text-muted">Loading...</div></div></div>`;
 
   let stations = [];
   try {
@@ -178,15 +180,15 @@ export async function renderWaveDetail({ root, ui, params }) {
       const order = (wave.orders || []).find((o) => o.orderId === t.orderId);
       return `
         <tr>
-          <td class="mono">${t.barcode}</td>
-          <td class="mono">${order?.externalRef || ""}</td>
+          <td class="font-mono">${t.barcode}</td>
+          <td class="font-mono">${order?.externalRef || ""}</td>
           <td>${badgeForOrderStatus(order?.status || "")}</td>
           <td>${badgeForToteStatus(t.status)}</td>
-          <td class="mono">${t.packingStationCode || ""}</td>
+          <td class="font-mono">${t.packingStationCode || ""}</td>
           <td style="min-width:220px">
             <div class="row row--start" style="gap:8px">
-              <select data-station-select="${t.barcode}" style="width:120px">${stationOptions}</select>
-              <button class="btn btn--secondary btn--sm" data-assign="${t.barcode}">Assign</button>
+              <select class="select" data-station-select="${t.barcode}" style="width:120px">${stationOptions}</select>
+              <button class="btn btn-outline btn-sm" data-assign="${t.barcode}">Assign</button>
             </div>
           </td>
         </tr>
@@ -196,53 +198,55 @@ export async function renderWaveDetail({ root, ui, params }) {
     root.innerHTML = `
       <div class="grid">
         <div class="card">
-          <div class="row">
+          <div class="card-header">
             <div>
-              <div class="card__title">Wave <span class="mono">#${wave.id}</span> — <span class="mono">${wave.code}</span></div>
-              <p class="card__subtitle">Status: ${badgeForWaveStatus(wave.status)}</p>
+              <h3 class="card-title">Wave <span class="font-mono">#${wave.id}</span> - <span class="font-mono">${wave.code}</span></h3>
+              <p class="card-subtitle">Status: ${badgeForWaveStatus(wave.status)}</p>
             </div>
             <div class="row row--start">
-              <a class="btn btn--ghost" href="#/waves">Back</a>
-              <button class="btn btn--secondary" id="btnWaveStart" ${wave.status === "PLANNED" ? "" : "disabled"}>Start Wave</button>
-              <button class="btn btn--primary" id="btnWaveComplete" ${wave.status === "IN_PROGRESS" ? "" : "disabled"}>Complete Wave</button>
+              <a class="btn btn-ghost btn-sm" href="#/waves">Back</a>
+              <button class="btn btn-outline btn-sm" id="btnWaveStart" ${wave.status === "PLANNED" ? "" : "disabled"}>Start Wave</button>
+              <button class="btn btn-primary btn-sm" id="btnWaveComplete" ${wave.status === "IN_PROGRESS" ? "" : "disabled"}>Complete Wave</button>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="row">
+          <div class="card-header">
             <div>
-              <div class="card__title">Totes</div>
-              <p class="card__subtitle">Assign to packing stations (PACK-1/2/3).</p>
+              <h3 class="card-title">Totes</h3>
+              <p class="card-subtitle">Assign to packing stations (PACK-1/2/3).</p>
             </div>
           </div>
-          <div class="divider"></div>
-          <div class="table-wrap">
-            <table style="min-width: 980px">
-              <thead>
-                <tr>
-                  <th>Tote</th>
-                  <th>Order Ref</th>
-                  <th>Order Status</th>
-                  <th>Tote Status</th>
-                  <th>Station</th>
-                  <th>Assign</th>
-                </tr>
-              </thead>
-              <tbody>${toteRows.join("") || `<tr><td colspan="6" class="muted">No totes</td></tr>`}</tbody>
-            </table>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table class="table table-wide-lg">
+                <thead>
+                  <tr>
+                    <th>Tote</th>
+                    <th>Order Ref</th>
+                    <th>Order Status</th>
+                    <th>Tote Status</th>
+                    <th>Station</th>
+                    <th>Assign</th>
+                  </tr>
+                </thead>
+                <tbody>${toteRows.join("") || `<tr><td colspan="6" class="text-muted">No totes</td></tr>`}</tbody>
+              </table>
+            </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="row">
+          <div class="card-header">
             <div>
-              <div class="card__title">Pick List (Grouped)</div>
-              <p class="card__subtitle">By location and SKU, with tote breakdown.</p>
+              <h3 class="card-title">Pick List (Grouped)</h3>
+              <p class="card-subtitle">By location and SKU, with tote breakdown.</p>
             </div>
           </div>
-          <div class="divider"></div>
-          <div id="pickListHost" class="grid"></div>
+          <div class="card-body">
+            <div id="pickListHost" class="grid"></div>
+          </div>
         </div>
       </div>
     `;
@@ -284,7 +288,7 @@ export async function renderWaveDetail({ root, ui, params }) {
 
     const pickHost = qs("#pickListHost", root);
     if (!pickList) {
-      pickHost.innerHTML = `<div class="muted">Pick list unavailable</div>`;
+      pickHost.innerHTML = `<div class="text-muted">Pick list unavailable</div>`;
     } else {
       const grouped = new Map();
       (pickList.itemsGroupedByLocation || []).forEach((item) => {
@@ -293,42 +297,69 @@ export async function renderWaveDetail({ root, ui, params }) {
         grouped.get(key).push(item);
       });
 
-      pickHost.innerHTML = Array.from(grouped.entries())
+      const groupEntries = Array.from(grouped.entries());
+      pickHost.innerHTML = groupEntries.length ? groupEntries
         .map(([locationCode, items]) => {
-          const lines = items
+          const totalUnits = items.reduce((sum, item) => sum + Number(item.totalQtyAssigned || 0), 0);
+          const rows = items
             .map((i) => {
+              const imageUrl = i.imageUrl ? encodeURI(i.imageUrl).replace(/'/g, "%27") : "";
               const breakdown = (i.breakdown || [])
-                .map((b) => `<div class="muted small mono">${b.toteBarcode}: ${b.qtyForThatOrderAtThatLocationSku}</div>`)
+                .map((b) => `<span class="tote-chip font-mono">${escapeHtml(b.toteBarcode || "")}: ${b.qtyForThatOrderAtThatLocationSku}</span>`)
                 .join("");
               return `
-                <div class="card" style="box-shadow:none">
-                  <div class="row">
-                    <div>
-                      <div style="font-weight:900" class="mono">${i.sku}</div>
-                      <div class="muted small">${i.productName}</div>
+                <tr>
+                  <td>
+                    <div class="row row--start">
+                      <div class="product-thumb product-thumb-sm" style="${imageUrl ? `background-image:url('${imageUrl}')` : ""}">
+                        ${imageUrl ? "" : `<span>${escapeHtml(i.productName?.slice(0, 1) || "P")}</span>`}
+                      </div>
+                      <div>
+                        <div class="product-name">${escapeHtml(i.productName || "")}</div>
+                        <div class="product-meta">
+                          <span class="font-mono">${escapeHtml(i.sku || "-")}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="pill mono">${i.totalQtyAssigned}</div>
-                  </div>
-                  <div style="margin-top:10px">${breakdown}</div>
-                </div>
+                  </td>
+                  <td class="font-mono">${i.totalQtyAssigned}</td>
+                  <td>
+                    <div class="tote-breakdown">
+                      ${breakdown || `<span class="text-muted small">No tote splits</span>`}
+                    </div>
+                  </td>
+                </tr>
               `;
             })
             .join("");
           return `
             <div class="card">
-              <div class="row">
-                <div class="card__title mono" style="margin:0">${locationCode}</div>
-                <div class="muted small">${items.length} item(s)</div>
+              <div class="card-header">
+                <div>
+                  <div class="card-title font-mono">${escapeHtml(locationCode)}</div>
+                  <div class="card-subtitle">${items.length} item(s) | ${totalUnits} units</div>
+                </div>
               </div>
-              <div class="divider"></div>
-              <div class="grid">${lines}</div>
+              <div class="card-body">
+                <div class="table-wrap">
+                  <table class="table table-compact">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th style="width:120px">Qty</th>
+                        <th>By Tote</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rows || `<tr><td colspan="3" class="text-muted">No items</td></tr>`}</tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           `;
         })
-        .join("");
+        .join("") : `<div class="text-muted">No pick list items</div>`;
     }
   } catch (e) {
-    root.innerHTML = `<div class="card"><div class="card__title">Error</div><p class="card__subtitle">${e.message}</p></div>`;
+    root.innerHTML = `<div class="card"><div class="card-body"><h3 class="card-title">Error</h3><p class="card-subtitle">${e.message}</p></div></div>`;
   }
 }
-

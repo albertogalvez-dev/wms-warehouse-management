@@ -1,0 +1,48 @@
+<div class="page-header">
+  <h2 class="section-title">Products</h2>
+  <p class="text-muted">Create, edit, and keep your catalog ready for picking and packing.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Product Catalog</h3>
+      <p class="card-subtitle">Search by SKU, name, description, or barcode.</p>
+    </div>
+    <div class="row row--start">
+      <button class="btn btn-primary" id="btnCreateProduct">New Product</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="filters-bar">
+      <div class="filter-group" style="flex:1; min-width:240px;">
+        <label class="label" for="productQuery">Search</label>
+        <input id="productQuery" class="input" placeholder="SKU, name, barcode..." />
+      </div>
+      <div class="filter-group">
+        <label class="label" for="productStatus">Status</label>
+        <select id="productStatus" class="select">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="label" for="productPageSize">Page size</label>
+        <select id="productPageSize" class="select">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <button class="btn btn-outline btn-sm" id="btnProductSearch" style="margin-top:20px;">
+          Search
+        </button>
+      </div>
+    </div>
+
+    <div id="productsTable" class="table-wrap"></div>
+    <div id="productsMeta" class="text-muted small mt-sm"></div>
+  </div>
+</div>

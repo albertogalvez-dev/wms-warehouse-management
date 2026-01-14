@@ -1,66 +1,214 @@
 import { apiGet, apiGetText } from "../api.js";
-import { qs, qsa, escapeHtml, downloadText } from "../utils.js";
+import { qs, qsa, escapeHtml, formatDateTime, downloadText } from "../utils.js";
+
+const CARRIER_META = {
+  DHL: { label: "DHL", logo: "../assets/carriers/dhl.svg" },
+  GLS: { label: "GLS", logo: "../assets/carriers/gls.svg" },
+  TDN: { label: "TDN", logo: "../assets/carriers/tdn.svg" },
+  CORREOS: { label: "CORREOS", logo: "../assets/carriers/correos.svg" },
+};
+
+function carrierBadge(carrier) {
+  const meta = CARRIER_META[carrier] || { label: carrier || "Unknown", logo: "" };
+  const logo = meta.logo ? `<img src="${meta.logo}" alt="${meta.label} logo" />` : "";
+  return `<span class="carrier-badge">${logo}${escapeHtml(meta.label)}</span>`;
+}
+
+function statusBadge(status) {
+  const s = String(status || "");
+  const map = { CREATED: "badge--muted", LABELLED: "badge--warn", PRINTED: "badge--ok" };
+  return `<span class="badge ${map[s] || "badge--muted"}">${escapeHtml(s || "-")}</span>`;
+}
 
 export async function renderShipments({ root, ui }) {
   root.innerHTML = `
-    <div class="grid">
+    <div class="grid grid-2">
       <div class="card">
-        <div class="card__title">Shipment Lookup</div>
-        <p class="card__subtitle">Search by shipmentId. (OrderId lookup requires backend support.)</p>
-        <div class="divider"></div>
-        <div class="row row--start">
-          <div style="min-width:220px">
-            <label>Shipment ID</label>
-            <input id="shipmentId" class="input mono" placeholder="123" />
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Shipments</h3>
+            <p class="card-subtitle">Demo shipments with carrier badges and labels.</p>
           </div>
-          <div style="min-width:220px">
-            <label>Order ID (optional)</label>
-            <input id="orderIdForShipment" class="input mono" placeholder="1" />
+          <div class="shipment-actions">
+            <button class="btn btn-outline btn-sm" id="btnShipmentsRefresh">Refresh</button>
           </div>
-          <div style="margin-top:18px">
-            <button class="btn btn--primary" id="btnShipmentSearch">Search</button>
+        </div>
+        <div class="card-body">
+          <div class="filters-bar">
+            <div class="filter-group">
+              <label class="label">Search</label>
+              <input id="shipmentQuery" class="input" placeholder="ID, order ref, carrier, city..." />
+            </div>
+            <div class="filter-group">
+              <label class="label">Status</label>
+              <select id="shipmentStatus" class="select">
+                <option value="all">All</option>
+                <option value="CREATED">CREATED</option>
+                <option value="LABELLED">LABELLED</option>
+                <option value="PRINTED">PRINTED</option>
+              </select>
+            </div>
           </div>
+          <div id="shipmentsTable" class="table-wrap"></div>
         </div>
       </div>
 
-      <div id="shipmentResult"></div>
+      <div id="shipmentDetail" class="card">
+        <div class="card-header">
+          <h3 class="card-title">Shipment Detail</h3>
+        </div>
+        <div class="card-body shipment-detail-empty">Select a shipment to see packages and labels.</div>
+      </div>
     </div>
   `;
 
-  async function renderShipment(shipment) {
+  const state = {
+    data: [],
+  };
+
+  async function loadShipments() {
+    const tableHost = qs("#shipmentsTable", root);
+    tableHost.innerHTML = `<div class="text-muted">Loading shipments...</div>`;
+    try {
+      const data = await apiGet("/api/shipments?page=0&size=50&sort=createdAt,desc");
+      state.data = data.content || [];
+      renderList();
+    } catch (e) {
+      tableHost.innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    }
+  }
+
+  function renderList() {
+    const query = qs("#shipmentQuery", root).value.trim().toLowerCase();
+    const statusFilter = qs("#shipmentStatus", root).value;
+    const rows = (state.data || []).filter((s) => {
+      const matchesStatus = statusFilter === "all" || s.status === statusFilter;
+      if (!query) return matchesStatus;
+      const haystack = [
+        s.id,
+        s.orderId,
+        s.externalRef,
+        s.carrier,
+        s.destinationCity,
+        s.destinationCountry,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return matchesStatus && haystack.includes(query);
+    });
+
+    const tableHost = qs("#shipmentsTable", root);
+    tableHost.innerHTML = `
+      <table class="table shipment-table">
+        <thead>
+          <tr>
+            <th>Shipment</th>
+            <th>Order</th>
+            <th>Carrier</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map((s) => {
+              const orderRef = s.externalRef || `#${s.orderId}`;
+              const destination = s.destinationCity ? ` - ${s.destinationCity}` : "";
+              return `
+                <tr>
+                  <td class="font-mono">#${escapeHtml(s.id)}</td>
+                  <td>
+                    <div class="font-mono">${escapeHtml(orderRef)}</div>
+                    <div class="text-muted" style="font-size:0.8125rem">${escapeHtml(destination)}</div>
+                  </td>
+                  <td>${carrierBadge(s.carrier)}</td>
+                  <td>${statusBadge(s.status)}</td>
+                  <td>${formatDateTime(s.createdAt)}</td>
+                  <td><button class="btn btn-outline btn-sm" data-view-shipment="${s.id}">View</button></td>
+                </tr>
+              `;
+            })
+            .join("") || `<tr><td colspan="6" class="text-muted">No shipments found</td></tr>`}
+        </tbody>
+      </table>
+    `;
+
+    qsa("[data-view-shipment]", root).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-view-shipment");
+        await loadShipmentDetail(id);
+      });
+    });
+  }
+
+  async function loadShipmentDetail(id) {
+    const detailHost = qs("#shipmentDetail", root);
+    detailHost.innerHTML = `
+      <div class="card-header">
+        <h3 class="card-title">Shipment Detail</h3>
+      </div>
+      <div class="card-body">
+        <div class="text-muted">Loading shipment...</div>
+      </div>
+    `;
+    try {
+      const shipment = await apiGet(`/api/shipments/${encodeURIComponent(id)}`);
+      renderShipmentDetail(shipment);
+    } catch (e) {
+      detailHost.innerHTML = `
+        <div class="card-header">
+          <h3 class="card-title">Shipment Detail</h3>
+        </div>
+        <div class="card-body text-err">Error: ${e.message}</div>
+      `;
+    }
+  }
+
+  function renderShipmentDetail(shipment) {
     const rows = (shipment.packages || []).map(
       (p) => `
         <tr>
-          <td class="mono">${p.id}</td>
-          <td class="mono">${p.packageNo}/${p.packageCount}</td>
-          <td class="mono">${p.trackingCode}</td>
-          <td class="mono">${p.labelFormat}</td>
-          <td class="mono">${p.printedAt || ""}</td>
+          <td class="font-mono">${escapeHtml(p.id)}</td>
+          <td class="font-mono">${escapeHtml(p.packageNo)}/${escapeHtml(p.packageCount)}</td>
+          <td class="font-mono">${escapeHtml(p.trackingCode)}</td>
+          <td class="font-mono">${escapeHtml(p.labelFormat)}</td>
+          <td class="font-mono">${escapeHtml(p.printedAt || "")}</td>
           <td>
-            <div class="row row--start" style="gap:8px">
-              <button class="btn btn--secondary btn--sm" data-view-zpl="${p.id}">View ZPL</button>
-              <button class="btn btn--secondary btn--sm" data-download-zpl="${p.id}">Download</button>
+            <div class="shipment-actions">
+              <button class="btn btn-outline btn-sm" data-view-zpl="${p.id}">View ZPL</button>
+              <button class="btn btn-ghost btn-sm" data-download-zpl="${p.id}">Download</button>
             </div>
           </td>
         </tr>
       `
     );
 
-    qs("#shipmentResult", root).innerHTML = `
-      <div class="card">
-        <div class="row">
-          <div>
-            <div class="card__title">Shipment <span class="mono">#${shipment.id}</span></div>
-            <p class="card__subtitle">Order: <span class="mono">#${shipment.orderId}</span> — Carrier: <span class="mono">${shipment.carrier}</span></p>
-          </div>
-          <div class="row row--start">
-            <span class="badge">${shipment.status}</span>
-          </div>
+    const detailHost = qs("#shipmentDetail", root);
+    const orderRef = shipment.externalRef || `#${shipment.orderId}`;
+    detailHost.innerHTML = `
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Shipment <span class="font-mono">#${escapeHtml(shipment.id)}</span></h3>
+          <p class="card-subtitle">Order ${escapeHtml(orderRef)}</p>
         </div>
-        ${shipment.printError ? `<div class="divider"></div><div class="badge badge--danger">Printer: ${escapeHtml(shipment.printError)}</div>` : ""}
-        <div class="divider"></div>
+        <div class="shipment-meta">
+          ${carrierBadge(shipment.carrier)}
+          ${statusBadge(shipment.status)}
+        </div>
+      </div>
+      <div class="card-body">
+        ${shipment.printError
+          ? `<div class="badge badge--danger">Printer: ${escapeHtml(shipment.printError)}</div><div class="divider"></div>`
+          : ""
+        }
+        <div class="row" style="gap: var(--space-md); margin-bottom: var(--space-md)">
+          <div class="text-muted">Created</div>
+          <div class="font-mono">${formatDateTime(shipment.createdAt)}</div>
+        </div>
         <div class="table-wrap">
-          <table style="min-width: 980px">
+          <table class="table">
             <thead>
               <tr>
                 <th>Package ID</th>
@@ -71,7 +219,7 @@ export async function renderShipments({ root, ui }) {
                 <th></th>
               </tr>
             </thead>
-            <tbody>${rows.join("") || `<tr><td colspan="6" class="muted">No packages</td></tr>`}</tbody>
+            <tbody>${rows.join("") || `<tr><td colspan="6" class="text-muted">No packages</td></tr>`}</tbody>
           </table>
         </div>
       </div>
@@ -83,10 +231,10 @@ export async function renderShipments({ root, ui }) {
         try {
           const zpl = await apiGetText(`/api/shipments/${shipment.id}/packages/${pkgId}/label.zpl`);
           ui.openModal({
-            title: `ZPL — ${shipment.id}/${pkgId}`,
-            bodyHtml: `<div class="row"><button class="btn btn--secondary btn--sm" id="btnCopyZpl">Copy</button></div>
+            title: `ZPL - ${shipment.id}/${pkgId}`,
+            bodyHtml: `<div class="row"><button class="btn btn-outline btn-sm" id="btnCopyZpl">Copy</button></div>
               <div class="divider"></div>
-              <textarea readonly class="input" style="width:100%; min-height:420px">${escapeHtml(zpl)}</textarea>`,
+              <textarea readonly class="input" style="width:100%; min-height:360px">${escapeHtml(zpl)}</textarea>`,
           });
           qs("#btnCopyZpl")?.addEventListener("click", async () => {
             await navigator.clipboard.writeText(zpl);
@@ -112,37 +260,9 @@ export async function renderShipments({ root, ui }) {
     });
   }
 
-  async function doSearch() {
-    const shipmentId = qs("#shipmentId", root).value.trim();
-    const orderId = qs("#orderIdForShipment", root).value.trim();
-    const host = qs("#shipmentResult", root);
-    host.innerHTML = `<div class="card"><div class="card__title">Loading</div></div>`;
+  qs("#shipmentQuery", root).addEventListener("input", renderList);
+  qs("#shipmentStatus", root).addEventListener("change", renderList);
+  qs("#btnShipmentsRefresh", root).addEventListener("click", loadShipments);
 
-    try {
-      if (shipmentId) {
-        const shipment = await apiGet(`/api/shipments/${encodeURIComponent(shipmentId)}`);
-        await renderShipment(shipment);
-        return;
-      }
-
-      if (orderId) {
-        const shipment = await apiGet(`/api/shipments/by-order/${encodeURIComponent(orderId)}`);
-        await renderShipment(shipment);
-        return;
-      }
-
-      host.innerHTML = `<div class="card"><div class="card__title">Enter an ID</div><p class="card__subtitle">Provide shipmentId or orderId.</p></div>`;
-    } catch (e) {
-      host.innerHTML = `<div class="card"><div class="card__title">Not found</div><p class="card__subtitle">${e.message}</p></div>`;
-    }
-  }
-
-  qs("#btnShipmentSearch", root).addEventListener("click", doSearch);
-  qs("#shipmentId", root).addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doSearch();
-  });
-  qs("#orderIdForShipment", root).addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doSearch();
-  });
+  await loadShipments();
 }
-

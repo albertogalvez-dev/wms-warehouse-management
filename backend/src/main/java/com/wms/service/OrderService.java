@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -24,6 +25,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final AllocationService allocationService;
+    private final ProductInventoryService inventoryService;
 
     // States that allow shipping modification
     private static final Set<OrderStatus> SHIPPING_EDITABLE_STATES = EnumSet.of(
@@ -31,10 +33,12 @@ public class OrderService {
 
     public OrderService(OrderRepository orderRepository,
             ProductRepository productRepository,
-            AllocationService allocationService) {
+            AllocationService allocationService,
+            ProductInventoryService inventoryService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.allocationService = allocationService;
+        this.inventoryService = inventoryService;
     }
 
     public OrderResponse create(OrderRequest request) {
@@ -55,6 +59,8 @@ public class OrderService {
             }
         }
 
+        Map<Long, ProductInventorySummary> inventoryMap = inventoryService.loadSummaries(productIds);
+
         Order order = new Order();
         order.setExternalRef(request.getExternalRef() != null && !request.getExternalRef().isBlank()
                 ? request.getExternalRef()
@@ -67,6 +73,14 @@ public class OrderService {
             Product product = productRepository.findById(lineReq.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Product not found with id: " + lineReq.getProductId()));
+            ProductInventorySummary summary = inventoryMap.get(product.getId());
+            int available = summary != null ? summary.getStockAvailable() : 0;
+            if (available < lineReq.getRequestedQty()) {
+                throw new InvalidOperationException(
+                        "Insufficient stock for " + product.getSku() +
+                                ": requested " + lineReq.getRequestedQty() +
+                                ", available " + available);
+            }
 
             OrderLine line = new OrderLine();
             line.setProduct(product);
@@ -82,7 +96,12 @@ public class OrderService {
     public OrderResponse findById(Long id) {
         Order order = orderRepository.findByIdWithLines(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-        return OrderResponse.fromEntity(order);
+        Set<Long> productIds = new HashSet<>();
+        for (OrderLine line : order.getLines()) {
+            productIds.add(line.getProduct().getId());
+        }
+        Map<Long, ProductInventorySummary> inventoryMap = inventoryService.loadSummaries(productIds);
+        return OrderResponse.fromEntity(order, inventoryMap);
     }
 
     @Transactional(readOnly = true)

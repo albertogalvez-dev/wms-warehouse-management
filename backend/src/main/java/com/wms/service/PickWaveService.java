@@ -217,6 +217,7 @@ public class PickWaveService {
         // Build a map: (locationCode, sku) -> List of (orderId, toteBarcode, qty)
         Map<String, Map<String, List<PickListResponse.OrderBreakdown>>> locationSkuMap = new TreeMap<>();
         Map<String, String> skuToProductName = new HashMap<>();
+        Map<String, String> skuToImageUrl = new HashMap<>();
 
         for (PickWaveOrder waveOrder : wave.getWaveOrders()) {
             Order order = waveOrder.getOrder();
@@ -238,6 +239,7 @@ public class PickWaveService {
                     String sku = line.getProduct().getSku();
 
                     skuToProductName.put(sku, line.getProduct().getName());
+                    skuToImageUrl.put(sku, line.getProduct().getImageUrl());
 
                     locationSkuMap
                             .computeIfAbsent(locationCode, k -> new TreeMap<>())
@@ -261,7 +263,7 @@ public class PickWaveService {
                         .sum();
 
                 groups.add(new PickListResponse.LocationGroup(
-                        locationCode, sku, skuToProductName.get(sku), totalQty, breakdown));
+                        locationCode, sku, skuToProductName.get(sku), skuToImageUrl.get(sku), totalQty, breakdown));
             }
         }
 

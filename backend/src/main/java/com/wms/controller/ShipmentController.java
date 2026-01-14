@@ -1,6 +1,7 @@
 package com.wms.controller;
 
 import com.wms.dto.ShipmentResponse;
+import com.wms.dto.ShipmentSummaryResponse;
 import com.wms.entity.Package;
 import com.wms.entity.Shipment;
 import com.wms.entity.ShipmentStatus;
@@ -11,6 +12,8 @@ import com.wms.repository.ShipmentRepository;
 import com.wms.service.PrinterClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +37,14 @@ public class ShipmentController {
         this.shipmentRepository = shipmentRepository;
         this.packageRepository = packageRepository;
         this.printerClient = printerClient;
+    }
+
+    @GetMapping
+    @Operation(summary = "List shipments (paginated)")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Page<ShipmentSummaryResponse>> listShipments(Pageable pageable) {
+        Page<Shipment> shipments = shipmentRepository.findAll(pageable);
+        return ResponseEntity.ok(shipments.map(ShipmentSummaryResponse::fromEntity));
     }
 
     @GetMapping("/{shipmentId}")
